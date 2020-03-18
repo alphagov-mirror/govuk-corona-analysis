@@ -1,4 +1,4 @@
-func_importdatabq <- function(sql_query){
+func_importdatabq <- function(sql_query, name_project, name_dataset){
   
   #' queries BigQuery's "cookie_impact_work" sql master tables using the `sql_query` saved in `queries/` folder
   #' 
@@ -18,8 +18,8 @@ func_importdatabq <- function(sql_query){
   # 2. establish connection
   id_project <- "govuk-bigquery-analytics"
   conn_pageviews <- bigrquery::dbConnect(drv = bigquery(),
-                                         project = "govuk-bigquery-analytics",
-                                         dataset = "cookie_impact_work",
+                                         project = name_project,
+                                         dataset = name_dataset,
                                          billing = id_project)
   
   # 3. read in SQL query 
