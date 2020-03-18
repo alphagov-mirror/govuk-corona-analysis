@@ -1,4 +1,4 @@
-func_readsql <- function(file) {
+func_readsql <- function(file_query) {
   
   #' @description  Allows the import of user-formatted SQL scripts that aren't traditionally readable 
   #' by transforming it to be machine-readable.
@@ -11,10 +11,10 @@ func_readsql <- function(file) {
   #' @param file (string) name of sql file containing the sql query
   #' @return machine readble sql query
   
-  if (!is.character(file)) stop("file parmaeter must be of type character")
+  if (!is.character(file_query)) stop("file parmaeter must be of type character")
   
   # Read in all lines from file
-  sqlLines <- readLines(file)
+  sqlLines <- readLines(file_query)
   
   # set any use lines to blank
   sqlLines <- gsub("^Use+.*$", "", sqlLines, perl = TRUE, ignore.case = TRUE)
