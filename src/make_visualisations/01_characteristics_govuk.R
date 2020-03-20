@@ -43,7 +43,91 @@ data_bq <- data_bq %>%
   mutate(date_period = factor(date_period, levels = unique(date_period))) 
 
 
+library(assertthat)
 
+func_calc_hshares_by_monthCat <- function(data, 
+                                          characteristic_var=""){
+  
+  #'@param data (data.frame) : dataset  
+  #'@param characteristic_var (character string) : name of the characteristic variable 
+  #'@description Calculates shares/proportions of hourly pageviews for 
+  #'each characteristic category for each monthly period
+  #'
+  #'@return aggregated dataframe containing number and proportion of hourly pageviews by 'date_period' and characteristic_var 
+  
+  # checks
+  required_cols <- c("date_period", "datetime_hour", "pageviews")
+  
+  data %>%
+    assertthat::not_empty() %>%
+    assertthat::has_name(required_cols)
+  
+  
+  # to allow use with dplyr and ggplot2: covert to symbol and then unquote it using !!
+  sym_charac <- dplyr::sym(characteristic_var)
+  
+  agg_data = tryCatch({
+    
+    data %>%
+      group_by(
+        date_period, 
+        datetime_hour, 
+        !!sym_charac) %>% 
+      # sum of all pageviews for each day-hour for each category
+      summarise(
+        total_pageviews = sum(as.numeric(pageviews), na.rm = TRUE)
+      ) %>%
+      # calculate proportion of hourly pageviews by category  
+      mutate(
+        prop_pageviews = total_pageviews/(sum(total_pageviews))
+      )
+    
+  }, warning = function(w) {
+    message(paste0('** WARNING when applying `func_calc_hshares_by_monthCat()` with "', characteristic_var, '" **'))
+    print(w)
+    
+  }, error = function(e) {
+    message(paste0('** ERROR when applying `func_calc_hshares_by_monthCat()` with "', characteristic_var, '" **'))
+    print(e)
+    
+  }, finally={
+  })
+  
+  return(agg_data)
+  
+}
+
+
+
+
+# number of unique categories
+n_cols <- length(unique(data_bq[["characteristic_var"]]))
+n_categories <- length(x = unique(x = data_bq$deviceCategory))
+
+data_bq %>%
+  #fill shades change according to x-values
+  ggplot(mapping = aes(x = prop_pageviews, y = date_period, fill = stat(x))) + 
+  geom_density_ridges_gradient(quantile_lines = TRUE, quantiles = 2, scale = 0.9) +
+  scale_fill_distiller(palette="Reds", direction = 1) +
+  scale_y_discrete(expand_scale(mult = c(0.01, 1))) +
+  scale_x_continuous(expand=c(0,0)) +
+  coord_cartesian(clip = "off") +
+  facet_wrap(reformulate(deviceCategory), ncol = n_categories) +
+  labs(
+    x = "share (i.e., proportion) of hourly page views",
+    y = "year and month",
+    title = paste("Density distribution of shares of hourly pageviews by", characteristic_var, "over monthly periods"),
+    subtitle = "Monthly periods start on the 21st of month 'k' and end on 20th of month 'k+1'",
+    caption = "20th of December was removed from all years"
+  )
+
+
+
+
+
+
+func_plot_densities_pgvwsShares_timeline(data=monthly_hshares_device,
+                                         characteristic_var="deviceCategory")
 func_plot_densities_pgvwsShares_timeline <- function(data, 
                                                      characteristic_var=""){
   
