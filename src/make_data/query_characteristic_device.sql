@@ -1,7 +1,7 @@
 SELECT 
   visitStartTimestamp
   ,deviceCategory
-  ,COUNT(DISTINCT CONCAT(CAST(fullVisitorId AS STRING), "-", CAST(visitId AS STRING), "-", CAST(hit_Number AS STRING))) AS pageviews 
+  ,COUNT(DISTINCT CONCAT(session_id, "-", hit_Number)) AS pageviews
 FROM `govuk-xgov.InsightsDataset.covid19ukgovresponse`
 WHERE type = "PAGE"
 GROUP BY visitStartTimestamp
