@@ -3,6 +3,7 @@ func_wrangle <- function(data){
   # deletes 20th Dec for more equal comparison across years
   # re-aggregates days into more sensible monthly period for analysis
   # so that days after 20th Dec 2019 are not conflated into same monthly period as days before 20th Dec 2019
+  # Ref: From cookies analysis by Alessia Tosi
   
   #'@param data_bq: data fetched from BigQuery, results of src/ingest_BQdata.R 
   #'@return original dataset with additional columns: 
