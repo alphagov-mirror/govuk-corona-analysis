@@ -125,6 +125,21 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Pycharm
+.idea
+
+# Ignore the `data` folder
+data/
+
+# Ignore the `.secrets` file
+.secrets
+
 # RStudio
 .Rproj.user
 .RHistory
