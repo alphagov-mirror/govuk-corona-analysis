@@ -9,13 +9,24 @@ source(here::here("src/make_data", "func_wrangle.R"))
 
 
 # Load and Wrangle --------------------------------------------------------
-data_bq <- readRDS(file = here::here("data", "bg_pgviews_devicecategory.RDS"))
+data_bq <- readRDS(file = here::here("data", "bg_pgviews_devicecategory_xdomain.RDS"))
+
+data_bq <- data_bq %>% 
+  mutate(date = as.Date(visitStartTimestamp),
+         date_year = lubridate::year(x = date),
+         hour = lubridate::hour(x = date),
+         datetime_hour = case_when(
+           stringr::str_length(hour) == 1    ~    paste0(date, ' 0', hour),
+           stringr::str_length(hour) == 2    ~    paste0(date, ' ', hour),
+           TRUE                              ~    NA_character_),
+         datetime_hour = lubridate::ymd_h(datetime_hour)) %>% 
+  group_by(date, date_year, datetime_hour, deviceCategory) %>% 
+  summarise(pageviews = sum(x = pageviews, na.rm = TRUE)) %>% 
+  ungroup()
 data_bq <- func_wrangle(data = data_bq)
 
 # compute proportions
 data_bq <- data_bq %>%
-  # filter out earlier dates to get more focussed plots
-  filter(date >= as.Date("2019-02-21")) %>% 
   group_by(date, date_period, datetime_hour, deviceCategory) %>% 
   # sum of all pageviews for each day-hour for each category
   summarise(total_pageviews = sum(x = as.numeric(pageviews), na.rm = TRUE)) %>%
@@ -33,6 +44,7 @@ data_timeplot <- data_bq %>%
 
 plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = prop_pageviews, colour = deviceCategory)) +
   geom_line() +
+  geom_vline(xintercept = as.Date("2020-03-15")) +
   facet_grid(rows = vars(deviceCategory)) +
   geom_vline(xintercept = as.Date(c("2017-12-21", "2018-12-21", "2019-12-21")),
              linetype = "dotted", colour = "black", size = 0.5) +
@@ -43,14 +55,14 @@ plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = 
   theme_gov()
 
 # save to 16:9 aspect ratio suitable for full-bleed slides
-ggsave(filename = "reports/figures/devicecategory_time_all.jpg", plot = plot_devicecategory, width = 9, height = 5.0625, units = "in")
+ggsave(filename = "reports/figures/devicecategory_time_cv.jpg", plot = plot_devicecategory, width = 9, height = 5.0625, units = "in")
 
 
   # Plot: Density ------------------------------------------------------------
 n_categories <- length(x = unique(x = data_bq$deviceCategory))
 
 plot_devicecategory <- data_bq %>%
-  # fill shades change according to x-values
+  #fill shades change according to x-values
   ggplot(mapping = aes(x = prop_pageviews, y = date_period, fill = stat(x))) + 
   geom_density_ridges_gradient(quantile_lines = TRUE, quantiles = 2, scale = 0.9) +
   scale_fill_distiller(palette = "Reds", direction = 1) +
@@ -68,4 +80,4 @@ plot_devicecategory <- data_bq %>%
   theme(axis.title.y = element_blank())
 
 # save to 16:9 aspect ratio suitable for full-bleed slides
-ggsave(filename = "reports/figures/devicecategory_density_all.jpg", plot = plot_devicecategory, width = 9, height = 5.0625, units = "in")
+ggsave(filename = "reports/figures/devicecategory_density_cv.jpg", plot = plot_devicecategory, width = 9, height = 5.0625, units = "in")

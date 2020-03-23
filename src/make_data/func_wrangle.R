@@ -15,7 +15,7 @@ func_wrangle <- function(data){
   data <- data %>%
     filter(!date %in% c(as.Date("2018-12-20"), as.Date("2019-12-20"))) %>%
     mutate(
-      date_year = factor(date_year, levels=rev(sort(unique(date_year)))),
+      date_year = factor(date_year, levels = rev(sort(unique(date_year)))),
       date_period = case_when(
         (date >= "2017-12-21" & date <= "2018-01-20") ~ "2017/18 Dec/Jan",
         (date >= "2018-01-21" & date <= "2018-02-20") ~ "2018 Jan/Feb",
@@ -57,8 +57,8 @@ func_wrangle <- function(data){
   data <- data %>%
     mutate(date_period_year = sapply(str_split(data$date_period, " "), function(x) x[1]),
            date_period_month = sapply(str_split(data$date_period, " "), function(x) x[2])) %>%
-    mutate(date_period_year = factor(date_period_year, levels=rev(ordered_period_years), ordered = TRUE),
-           date_period_month = factor(date_period_month, levels=rev(ordered_period_months), ordered = TRUE))
+    mutate(date_period_year = factor(date_period_year, levels = rev(ordered_period_years), ordered = TRUE),
+           date_period_month = factor(date_period_month, levels = rev(ordered_period_months), ordered = TRUE))
   
   # order also date_period
   data$date_period <- factor(data$date_period, 
