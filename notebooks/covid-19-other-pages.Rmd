@@ -1,0 +1,249 @@
+---
+title: "Covid-19: Other (non-covid) pages"
+output: html_notebook
+---
+
+```{r figure-size, include = FALSE}
+knitr::opts_chunk$set(
+  fig.width = 960/36, fig.height = 640/36, dpi = 72,
+  cache = TRUE
+)
+```
+
+```{r browser, include = FALSE}
+op <- options(browser = "xdg-open")
+```
+
+## Background
+
+Idea: journeys that include anything related to coronavirus (search term, page
+title, page content) are coronavirus journeys. What other pages are browsed
+during such journeys that don't mention coronavirus?  I.e. what do our regexes
+miss?
+
+1. Sample all GOV.UK journeys
+1. Tag any journey with a search/url/content containing "corona", "covid", "lockdown", etc. (from this card) as a corona-related journey
+1. For each page that doesn't have url/content containing "corona", "covid", etc., how much more often does it appear in a corona journey than a non-corona journey?
+
+[Trello
+card](https://trello.com/c/ZTNTDvHX/64-what-pages-are-browsed-during-coronavirus-journeys)
+
+## Summary findings
+
+It isn't obvious that these are covid-related pages that our regexes miss.
+People might visit GOV.UK because of coronavirus, and then do other things while
+they are there.
+
+Some categories:
+
+* benefits
+* paying tax
+* business
+* childcare
+
+|ratio|page
+|-----|----------------------------------------------------------------|
+|100% | www.gov.uk/search/all?keywords=shielding&order=relevance
+|100% | www.gov.uk/search/all?keywords=vulnerable&order=relevance
+|98%  | www.gov.uk/email/subscriptions/verify
+|96%  | www.gov.uk/browse/disabilities
+|96%  | www.gov.uk/transition
+|96%  | www.gov.uk/difficulties-paying-hmrc
+|89%  | www.gov.uk/employment-support-allowance/your-esa-claim
+|88%  | www.gov.uk/browse/business
+|87%  | www.gov.uk/employment-support-allowance
+|87%  | /maternity-paternity-calculator
+|86%  | www.gov.uk/
+|86%  | www.gov.uk/contact
+|84%  | www.gov.uk/employment-support-allowance/what-youll-get
+|81%  | www.gov.uk/browse/childcare-parenting
+|81%  | www.gov.uk/pip/how-to-claim
+|80%  | www.gov.uk/browse/births-deaths-marriages
+|80%  | /check-uk-visa
+|77%  | www.gov.uk/browse/tax
+|77%  | www.gov.uk/employment-support-allowance/how-to-claim
+|74%  | www.gov.uk/employment-support-allowance/eligibility
+|70%  | www.gov.uk/browse/benefits/tax-credits
+|69%  | www.gov.uk/find-local-council
+|68%  | www.gov.uk/browse/benefits
+|67%  | www.gov.uk/browse/benefits/entitlement
+|65%  | www.gov.uk/browse/visas-immigration
+|65%  | www.gov.uk/housing-and-universal-credit
+|65%  | www.vehicle-operator-licensing.service
+|65%  | www.gov.uk/business-finance-support
+|64%  | www.gov.uk/universal-credit/eligibility
+|64%  | www.gov.uk/search/all?keywords=universal+credit&order=relevance
+
+## Data
+
+### Data caveats
+
+Sessions aren't randomly sampled, we just take the first n that Google BigQuery
+gives us.
+
+### Web analytics
+
+You need access to the BigQuery table
+`govuk-xgov.InsightsDataset.allgovuk_20200322`.  This holds every page visited
+by every GOV.UK session.
+
+## Load packages
+
+```{r local-variables}
+# Title for graphs
+title <- "Coronavirus search bounces"
+```
+
+```{r library}
+# General
+library(tidyverse)
+```
+
+```{r utils}
+# Format to a string to the nearest 1%
+one_percent <- partial(scales::percent, accuracy = 1)
+```
+
+## Download data from BigQuery
+
+Create a dataset called `sessions_raw`.  It's called `raw` because it needs a
+lot of cleaning.
+
+```{r bigquery}
+# Authenticate via the browser (using your own email address)
+bigrquery::bq_auth(email = "duncan.garmonsway@digital.cabinet-office.gov.uk")
+
+# Connect to the dataset
+con <- DBI::dbConnect(bigrquery::bigquery(),
+                      project = "govuk-xgov",
+                      dataset = "InsightsDataset")
+
+# Query a table
+sql <-
+'
+  WITH sample AS (
+    SELECT DISTINCT session_id
+    FROM `govuk-xgov.InsightsDataset.allgovuk_20200322`
+    -- WHERE visitStartTimestamp >= TIMESTAMP "2020-03-22 00:00:00 UTC"
+    -- AND visitStartTimestamp < TIMESTAMP "2020-03-23 00:00:00 UTC"
+    LIMIT 100000
+  )
+  SELECT
+    main.session_id,
+    main.pagePath AS page,
+    main.event_start_time AS date_time
+  FROM
+    `govuk-xgov.InsightsDataset.allgovuk_20200322` AS main
+  INNER JOIN sample ON sample.session_id = main.session_id
+'
+# Perform the query
+sessions_raw <- DBI::dbGetQuery(con, sql)
+```
+
+## Truncate service URLs
+
+A lot of different Verify pages crop up, but we don't need to know about them
+individually.  So for `some.service.gov.uk/` discard everything after the
+`.service`.
+
+```{r clean}
+clean <-
+  sessions_raw %>%
+  mutate(page = str_replace(page, "^(.+\\.service)(\\.gov\\.uk).*", "\\1"))
+```
+
+## Tag pages and sessions that are corona-related
+
+Use the vocabulary of the basetable `xgov_data_access.Basetable_corona`.
+
+```{r covid-vocab}
+vocab <-
+  c("corona",
+    "covid",
+    "wuhan",
+    "guidance",
+    "news",
+    "government",
+    "advice",
+    "collection",
+    "info",
+    "travel",
+    "health",
+    "work",
+    "virus",
+    "sick",
+    "self",
+    "isolation",
+    "closure",
+    "quarantine")
+```
+
+Tag pages.
+
+```{r mark-covid-page}
+is_covid_page <-
+  clean %>%
+  distinct(page) %>%
+  # vectorised str_detect: https://stackoverflow.com/a/39439481/937932
+  mutate(is_covid_page =
+           apply(outer(page, vocab, stringi::stri_detect_fixed), 1, any))
+```
+
+Tag sessions.
+
+```{r mark-covid-session}
+is_covid_session <-
+  clean %>%
+  inner_join(is_covid_page, by = "page") %>%
+  group_by(session_id) %>%
+  summarise(is_covid_session = any(is_covid_page)) %>%
+  ungroup()
+```
+
+For each non-covid page (with at least 100 hits), how much more often does it
+appear in covid sessions than non-covid sessions?
+
+```{r non-covid-ratio}
+ratios <-
+  clean %>%
+  inner_join(is_covid_page, by = "page") %>%
+  filter(!is_covid_page) %>%
+  inner_join(is_covid_session, by = "session_id") %>%
+  count(page, is_covid_session) %>%
+  complete(page, is_covid_session, fill = list(n = 0)) %>%
+  pivot_wider(id_cols = page,
+              names_from = is_covid_session,
+              names_prefix = "is_covid_session_",
+              values_from = n) %>%
+  mutate(ratio = is_covid_session_TRUE / (is_covid_session_TRUE +
+                                          is_covid_session_FALSE)) %>%
+  filter(is_covid_session_FALSE + is_covid_session_TRUE >= 100) %>%
+  select(ratio, page, is_covid_session_TRUE, is_covid_session_FALSE) %>%
+  arrange(desc(ratio))
+```
+
+Plot the distribution of ratios.
+
+```{r ratio-distribution}
+ratios %>%
+  ggplot(aes(ratio)) +
+  geom_density() +
+  labs(x = "Covid-relatedness:
+0 means never seen in covid-related sessions
+1 means only seen in covid-related sessions",
+  y = "",
+  title = "Distribution of covid-relatedness of non-covid pages",
+  subtitle = "Pages that aren't covid-related, but that are sometimes viewed in sessions that visit covid-related pages")
+```
+
+Table of ratios.  A high ratio such as 90% means that 90% of the page hits
+occured in sessions that also visited covid-related pages.
+
+<div style='width:1200px;margin: 0 auto;'>
+
+```{r ratio-head, cols.print = 5}
+ratios %>%
+  arrange(desc(ratio)) %>%
+  mutate(ratio = one_percent(ratio)) %>%
+  print(n = 30)
+```
