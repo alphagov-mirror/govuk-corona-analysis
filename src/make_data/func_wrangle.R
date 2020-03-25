@@ -9,8 +9,10 @@ func_wrangle <- function(data){
   #'@return original dataset with additional columns: 
   #' date_period, date_period_year, date_period_month, date_week_n, date_period_month_week 
   
+  pckgs <- c("dplyr", "stringr")
   require("dplyr", "stringr")
   if(!"date" %in% colnames(data)) stop(paste0("column 'date' is missing from dataset"))
+  sapply(pckgs, function(p) if(!p %in% rownames(installed.packages())) stop(paste0("package ", p, " required but not found!")))
   
   data <- data %>%
     filter(!date %in% c(as.Date("2018-12-20"), as.Date("2019-12-20"))) %>%
