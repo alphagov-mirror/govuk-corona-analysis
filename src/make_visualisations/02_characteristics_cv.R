@@ -66,7 +66,6 @@ ggplot(data = data_timeplot, mapping = aes(x = date, y = total_pageviews, colour
 # proportions
 plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = prop_pageviews, colour = deviceCategory)) +
   geom_line() +
-  facet_grid(rows = vars(deviceCategory)) +
   geom_vline(xintercept = as.Date(c("2020-03-15")),
              linetype = "dotted", colour = "black", size = 0.5) +
   labs(title = "Time Plot of GOV.UK Daily Shares of Pageviews by Device Category", 
