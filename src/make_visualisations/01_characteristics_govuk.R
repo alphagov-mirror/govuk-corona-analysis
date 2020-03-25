@@ -3,10 +3,16 @@ library(stringr)
 
 library(ggplot2)
 library(ggridges)
-library(govstyle)
+library(khroma)
 
 source(here::here("src/make_data", "func_wrangle.R"))
 
+# create custom plotting theme
+theme_custom <- theme(plot.title = element_text(face = "bold", hjust = 0.5),
+                      panel.background = element_blank(),
+                      axis.line = element_line(colour = "black"),
+                      legend.position = "bottom",
+                      legend.direction = "horizontal")
 
 # Load and Wrangle --------------------------------------------------------
 data_bq <- readRDS(file = here::here("data", "bg_pgviews_devicecategory.RDS"))
@@ -18,9 +24,9 @@ data_bq <- data_bq %>%
   filter(date >= as.Date("2019-02-21")) %>% 
   group_by(date, date_period, datetime_hour, deviceCategory) %>% 
   # sum of all pageviews for each day-hour for each category
-  summarise(total_pageviews = sum(x = as.numeric(pageviews), na.rm = TRUE)) %>%
+  summarise(total_pageviews = sum(x = pageviews)) %>%
   # calculate proportion of hourly pageviews by category  
-  mutate(prop_pageviews = total_pageviews/(sum(total_pageviews)))
+  mutate(prop_pageviews = total_pageviews/(sum(x = total_pageviews)))
 
 
 # Plot --------------------------------------------------------------------
@@ -28,26 +34,27 @@ data_bq <- data_bq %>%
   # Plot: Time ---------------------------------------------------------------
 data_timeplot <- data_bq %>% 
   group_by(date, deviceCategory) %>% 
-  summarise(total_pageviews = sum(x = total_pageviews, na.rm = TRUE)) %>% 
+  summarise(total_pageviews = sum(x = total_pageviews)) %>% 
   mutate(prop_pageviews = total_pageviews/sum(x = total_pageviews))
 
 plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = prop_pageviews, colour = deviceCategory)) +
   geom_line() +
-  facet_grid(rows = vars(deviceCategory)) +
-  geom_vline(xintercept = as.Date(c("2017-12-21", "2018-12-21", "2019-12-21")),
+  #facet_grid(rows = vars(deviceCategory)) +
+  geom_vline(xintercept = as.Date(c("2019-12-21", "2020-03-15")),
              linetype = "dotted", colour = "black", size = 0.5) +
   labs(title = "Time Plot of GOV.UK Daily Shares of Pageviews by Device Category", 
        x = "Date", 
        y = "Share of page views",
        colour = guide_legend(title = "Key:")) +
-  theme_gov()
+  scale_colour_bright() +
+  theme_custom
 
 # save to 16:9 aspect ratio suitable for full-bleed slides
 ggsave(filename = "reports/figures/devicecategory_time_all.jpg", plot = plot_devicecategory, width = 9, height = 5.0625, units = "in")
 
 
   # Plot: Density ------------------------------------------------------------
-n_categories <- length(x = unique(x = data_bq$deviceCategory))
+n_categories <- n_distinct(x = data_bq$deviceCategory)
 
 plot_devicecategory <- data_bq %>%
   # fill shades change according to x-values
@@ -61,10 +68,9 @@ plot_devicecategory <- data_bq %>%
   labs(
     x = "Share of hourly page views",
     y = "Year and month",
-    title = paste("Density Distribution Plot of GOV.UK Hourly Shares of Pageviews by Device Category"),
-    caption = "Monthly periods start on the 21st of month 'k' and end on 20th of month 'k+1' \n20th of December was removed from all years"
-  ) +
-  theme_gov() +
+    title = paste("Density Distribution Plot of GOV.UK Hourly Shares of Pageviews by Device Category")) +
+  scale_colour_bright() +
+  theme_custom +
   theme(axis.title.y = element_blank())
 
 # save to 16:9 aspect ratio suitable for full-bleed slides

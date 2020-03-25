@@ -7,12 +7,19 @@ library(govstyle)
 
 source(here::here("src/make_data", "func_wrangle.R"))
 
+# create custom plotting theme
+theme_custom <- theme(plot.title = element_text(face = "bold", hjust = 0.5),
+                      panel.background = element_blank(),
+                      axis.line = element_line(colour = "black"),
+                      legend.position = "bottom",
+                      legend.direction = "horizontal")
 
 # Load and Wrangle --------------------------------------------------------
 data_bq <- readRDS(file = here::here("data", "bg_pgviews_devicecategory_xdomain.RDS"))
 
 data_bq <- data_bq %>% 
   mutate(date = as.Date(visitStartTimestamp),
+         # create columns so we can pass it through `func_wrangle()` function
          date_year = lubridate::year(x = date),
          hour = lubridate::hour(x = date),
          datetime_hour = case_when(
@@ -21,7 +28,7 @@ data_bq <- data_bq %>%
            TRUE                              ~    NA_character_),
          datetime_hour = lubridate::ymd_h(datetime_hour)) %>% 
   group_by(date, date_year, datetime_hour, deviceCategory) %>% 
-  summarise(pageviews = sum(x = pageviews, na.rm = TRUE)) %>% 
+  summarise(pageviews = sum(x = pageviews)) %>% 
   ungroup()
 data_bq <- func_wrangle(data = data_bq)
 
@@ -29,7 +36,7 @@ data_bq <- func_wrangle(data = data_bq)
 data_bq <- data_bq %>%
   group_by(date, date_period, datetime_hour, deviceCategory) %>% 
   # sum of all pageviews for each day-hour for each category
-  summarise(total_pageviews = sum(x = as.numeric(pageviews), na.rm = TRUE)) %>%
+  summarise(total_pageviews = sum(x = pageviews)) %>%
   # calculate proportion of hourly pageviews by category  
   mutate(prop_pageviews = total_pageviews/(sum(total_pageviews)))
 
@@ -42,6 +49,18 @@ data_timeplot <- data_bq %>%
   summarise(total_pageviews = sum(x = total_pageviews, na.rm = TRUE)) %>% 
   mutate(prop_pageviews = total_pageviews/sum(x = total_pageviews))
 
+# counts
+ggplot(data = data_timeplot, mapping = aes(x = date, y = total_pageviews, colour = deviceCategory)) +
+  geom_point() +
+  geom_vline(xintercept = as.Date("2019-12-21", "2020-03-15"),
+             linetype = "dotted", colour = "black", size = 0.5) +
+  labs(title = "Time Plot of GOV.UK Daily Pageviews by Device Category", 
+       x = "Date", 
+       y = "Total page views",
+       colour = guide_legend(title = "Key:")) +
+  theme_custom
+
+# proportions
 plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = prop_pageviews, colour = deviceCategory)) +
   geom_line() +
   geom_vline(xintercept = as.Date("2020-03-15")) +
@@ -76,7 +95,7 @@ plot_devicecategory <- data_bq %>%
     title = paste("Density Distribution Plot of GOV.UK Hourly Shares of Pageviews by Device Category"),
     caption = "Monthly periods start on the 21st of month 'k' and end on 20th of month 'k+1' \n20th of December was removed from all years"
   ) +
-  theme_gov() +
+  theme_custom +
   theme(axis.title.y = element_blank())
 
 # save to 16:9 aspect ratio suitable for full-bleed slides
