@@ -97,6 +97,9 @@ title <- "Coronavirus search bounces"
 ```{r library}
 # General
 library(tidyverse)
+
+# Plotting
+library(plotly)
 ```
 
 ```{r utils}
@@ -108,6 +111,17 @@ one_percent <- partial(scales::percent, accuracy = 1)
 
 Create a dataset called `sessions_raw`.  It's called `raw` because it needs a
 lot of cleaning.
+
+The
+[`RAND()`](https://cloud.google.com/dataprep/docs/html/RAND-Function_57344757)
+function should accept a seed, but it gives an error:
+> `Error: No matching signature for function RAND for argument types: INT64.
+> Supported signature: RAND() at [5:11] [invalidQuery]`
+
+1. Select distinct `session_id`s.
+1. Order them randomly
+1. Select the first n rows (e.g. 500,000 for a sample of 500,000 sessions)
+1. Get the full session of each id.
 
 ```{r bigquery}
 # Authenticate via the browser (using your own email address)
@@ -121,19 +135,23 @@ con <- DBI::dbConnect(bigrquery::bigquery(),
 # Query a table
 sql <-
 '
-  WITH sample AS (
+  WITH
+  session_ids AS (
     SELECT DISTINCT session_id
-    FROM `govuk-xgov.InsightsDataset.allgovuk_20200322`
-    -- WHERE visitStartTimestamp >= TIMESTAMP "2020-03-22 00:00:00 UTC"
-    -- AND visitStartTimestamp < TIMESTAMP "2020-03-23 00:00:00 UTC"
-    LIMIT 100000
+    FROM `govuk-xgov.InsightsDataset.allgovuk_20200324`
+    ORDER BY rand()
+  ),
+  sample AS (
+    SELECT session_id
+    FROM session_ids
+    LIMIT 500000
   )
   SELECT
     main.session_id,
     main.pagePath AS page,
     main.event_start_time AS date_time
   FROM
-    `govuk-xgov.InsightsDataset.allgovuk_20200322` AS main
+    `govuk-xgov.InsightsDataset.allgovuk_20200324` AS main
   INNER JOIN sample ON sample.session_id = main.session_id
 '
 # Perform the query
@@ -175,6 +193,8 @@ vocab <-
     "self",
     "isolation",
     "closure",
+    "shielding",  # not in Basetable_corona yet
+    "vulnerable", # not in Basetable_corona yet
     "quarantine")
 ```
 
@@ -215,35 +235,27 @@ ratios <-
               names_from = is_covid_session,
               names_prefix = "is_covid_session_",
               values_from = n) %>%
-  mutate(ratio = is_covid_session_TRUE / (is_covid_session_TRUE +
-                                          is_covid_session_FALSE)) %>%
-  filter(is_covid_session_FALSE + is_covid_session_TRUE >= 100) %>%
-  select(ratio, page, is_covid_session_TRUE, is_covid_session_FALSE) %>%
+  mutate(total = is_covid_session_TRUE + is_covid_session_FALSE,
+         ratio = is_covid_session_TRUE / total) %>%
+  filter(total >= 100) %>%
+  select(ratio, page, is_covid_session_TRUE, is_covid_session_FALSE, total) %>%
   arrange(desc(ratio))
 ```
 
-Plot the distribution of ratios.
+Is there are relationship between the total number of hits and the ratio?  Yes,
+pages with the most hits tended not to be in corona-related journeys.
 
-```{r ratio-distribution}
-ratios %>%
-  ggplot(aes(ratio)) +
-  geom_density() +
-  labs(x = "Covid-relatedness:
+```{r ratio-by-hits}
+p <-
+  ratios %>%
+  mutate(hypotenuse = sqrt(total^(1/4)^2 + ratio^2)) %>%
+  ggplot(aes(ratio, total, label = page)) +
+  geom_point() +
+  scale_y_log10(labels = scales::label_comma()) +
+  labs(x = "Covid-relatedness ratio:
 0 means never seen in covid-related sessions
 1 means only seen in covid-related sessions",
-  y = "",
-  title = "Distribution of covid-relatedness of non-covid pages",
-  subtitle = "Pages that aren't covid-related, but that are sometimes viewed in sessions that visit covid-related pages")
-```
-
-Table of ratios.  A high ratio such as 90% means that 90% of the page hits
-occured in sessions that also visited covid-related pages.
-
-<div style='width:1200px;margin: 0 auto;'>
-
-```{r ratio-head, cols.print = 5}
-ratios %>%
-  arrange(desc(ratio)) %>%
-  mutate(ratio = one_percent(ratio)) %>%
-  print(n = 30)
+  y = "Total page hits",
+  title = "Distribution of covid-relatedness of non-covid pages, by total page hits")
+ggplotly(p)
 ```
