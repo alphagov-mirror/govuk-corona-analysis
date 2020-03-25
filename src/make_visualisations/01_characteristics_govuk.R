@@ -60,7 +60,7 @@ plot_devicecategory <- data_bq %>%
   # fill shades change according to x-values
   ggplot(mapping = aes(x = prop_pageviews, y = date_period, fill = stat(x))) + 
   geom_density_ridges_gradient(quantile_lines = TRUE, quantiles = 2, scale = 0.9) +
-  scale_fill_distiller(palette = "Reds", direction = 1) +
+  scale_fill_YlOrBr() +
   scale_y_discrete(expansion(mult = c(0.01, 1))) +
   scale_x_continuous(expand = c(0,0)) +
   coord_cartesian(clip = "off") +
@@ -69,7 +69,6 @@ plot_devicecategory <- data_bq %>%
     x = "Share of hourly page views",
     y = "Year and month",
     title = paste("Density Distribution Plot of GOV.UK Hourly Shares of Pageviews by Device Category")) +
-  scale_colour_bright() +
   theme_custom +
   theme(axis.title.y = element_blank())
 
