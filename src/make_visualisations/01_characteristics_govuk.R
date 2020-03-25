@@ -39,7 +39,7 @@ data_timeplot <- data_bq %>%
 
 plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = prop_pageviews, colour = deviceCategory)) +
   geom_line() +
-  geom_vline(xintercept = as.Date(c("2020-03-15")),
+  geom_vline(xintercept = as.Date(c("2019-12-20", "2020-03-15")),
              linetype = "dotted", colour = "black", size = 0.5) +
   labs(title = "Time Plot of GOV.UK Daily Shares of Pageviews by Device Category", 
        x = "Date", 
