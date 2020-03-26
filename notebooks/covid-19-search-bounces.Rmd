@@ -173,6 +173,9 @@ bounce_back_rates %>%
        subtitle = "Distribution of the rate, per page, that users bounce back from the page")
 ```
 
+Table the pages with the highest bounce-back rates, filtering for pages that are
+visited at least 100 times.
+
 ```{r}
 bounce_back_rates %>%
   filter(bounced_FALSE + bounced_TRUE >= 100) %>%
