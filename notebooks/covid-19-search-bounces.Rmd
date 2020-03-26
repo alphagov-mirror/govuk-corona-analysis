@@ -41,7 +41,7 @@ gives us.
 You need access to the BigQuery table
 `govuk-xgov.InsightsDataset.corona_journeys_20200322`.  This holds every page
 visited by any session that included the coronavirus topic page
-`https://www.gov.uk/government/topical-events/coronavirus-covid-19-uk-government-response`.
+`https://www.gov.uk/coronavirus`.
 
 ## Load packages
 
@@ -208,9 +208,10 @@ search_bounce_back_rates %>%
 Look at one of the worst
 `gov.uk/news-and-communications?topical_events[]=coronavirus-covid-19-uk-government-response`.
 
-It turns out that search is linked to via `News` on the topic page.  People are
-scrolling through to visit all the news items.  The other searches are similar,
-apart from Universal Credit.
+It turns out that search is linked to via `News` on the [topic
+page](https://www.gov.uk/coronavirus).  People are scrolling through to visit
+all the news items.  The other searches are similar, apart from Universal
+Credit.
 
 ```{r particular-bounce}
 sessions_raw %>%
