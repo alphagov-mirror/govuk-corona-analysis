@@ -57,7 +57,7 @@ plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = 
   geom_line() +
   geom_vline(xintercept = as.Date("2020-03-15"),
              linetype = "dotted", colour = "black", size = 0.5) +
-  labs(title = "Time Plot of GOV.UK Daily Pageviews by Device Category", 
+  labs(title = "Time Plot of Cross-Domain Daily Pageviews by Device Category", 
        x = "Date", 
        y = "Total page views",
        colour = guide_legend(title = "Key:")) +
@@ -71,7 +71,7 @@ plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = 
   geom_line() +
   geom_vline(xintercept = as.Date(c("2020-03-15")),
              linetype = "dotted", colour = "black", size = 0.5) +
-  labs(title = "Time Plot of GOV.UK Daily Shares of Pageviews by Device Category", 
+  labs(title = "Time Plot of Cross-Domain Daily Shares of Pageviews by Device Category", 
        x = "Date", 
        y = "Share of page views",
        colour = guide_legend(title = "Key:")) +
@@ -97,7 +97,7 @@ plot_devicecategory <- data_bq %>%
   labs(
     x = "Share of hourly page views",
     y = "Year and month",
-    title = paste("Density Distribution Plot of GOV.UK Hourly Shares of Pageviews by Device Category"),
+    title = paste("Density Distribution Plot of Cross-Domain Hourly Shares of Pageviews by Device Category"),
     caption = "Monthly periods start on the 21st of month 'k' and end on 20th of month 'k+1' \n20th of December was removed from all years"
   ) +
   theme_custom +
