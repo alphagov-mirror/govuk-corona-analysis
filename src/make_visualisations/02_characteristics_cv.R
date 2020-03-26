@@ -52,8 +52,9 @@ data_timeplot <- data_bq %>%
   mutate(prop_pageviews = total_pageviews/sum(x = total_pageviews))
 
 # counts
-ggplot(data = data_timeplot, mapping = aes(x = date, y = total_pageviews, colour = deviceCategory)) +
+plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = total_pageviews, colour = deviceCategory)) +
   geom_point() +
+  geom_line() +
   geom_vline(xintercept = as.Date("2020-03-15"),
              linetype = "dotted", colour = "black", size = 0.5) +
   labs(title = "Time Plot of GOV.UK Daily Pageviews by Device Category", 
@@ -62,6 +63,8 @@ ggplot(data = data_timeplot, mapping = aes(x = date, y = total_pageviews, colour
        colour = guide_legend(title = "Key:")) +
   scale_colour_bright() +
   theme_custom
+# save to 16:9 aspect ratio suitable for full-bleed slides
+ggsave(filename = "reports/figures/devicecategory_time_cvcounts.jpg", plot = plot_devicecategory, width = 9, height = 5.0625, units = "in")
 
 # proportions
 plot_devicecategory <- ggplot(data = data_timeplot, mapping = aes(x = date, y = prop_pageviews, colour = deviceCategory)) +

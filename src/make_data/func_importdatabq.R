@@ -7,7 +7,8 @@ func_importdatabq <- function(file_query, name_project, name_dataset){
   #' @param name_project name of GCP BQ project.
   #' @param name_dataset name of dataset that file_query calls the table
   
-  require("DBI", "bigrquery")
+  require("DBI")
+  require("bigrquery")
   pckgs <- c("DBI", "bigrquery")
   source("src/make_data/func_readsql.R")
   
