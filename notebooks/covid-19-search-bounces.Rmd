@@ -140,11 +140,15 @@ frequencies %>%
 ## Bounce-back rates per page (not necessarily search)
 
 ```{r bounce-back-rates}
-bounce_back_rates <-
+bounce_backs <-
   searches %>%
   group_by(session_id) %>%
+  # Look ahead to see if the next page bounced back
   mutate(bounced_back = lead(bounced_back, default = FALSE)) %>%
-  ungroup() %>%
+  ungroup()
+
+bounce_back_rates <-
+  bounce_backs %>%
   count(page, bounced_back) %>%
   complete(page, bounced_back, fill = list(n = 0)) %>%
   pivot_wider(id = page,
@@ -179,10 +183,7 @@ bounce_back_rates %>%
 
 ```{r search-bounce-back-rates}
 search_bounce_back_rates <-
-  searches %>%
-  group_by(session_id) %>%
-  mutate(bounced_back = lead(bounced_back, default = FALSE)) %>%
-  ungroup() %>%
+  bounce_backs %>%
   filter(is_search) %>%
   mutate(page = str_sub(page, 19)) %>%
   count(page, bounced_back) %>%
