@@ -1,0 +1,223 @@
+---
+title: "Covid-19 topic page: Search bounces"
+output: html_notebook
+---
+
+```{r figure-size, include = FALSE}
+knitr::opts_chunk$set(
+  fig.width = 960/36, fig.height = 640/36, dpi = 72,
+  cache = TRUE
+)
+```
+
+```{r browser, include = FALSE}
+op <- options(browser = "xdg-open")
+```
+
+## Background
+
+Idea: journeys that go 'search->page->search' suggest that the page didn't meet
+the need. What pages have the highest proportion of such journeys?
+
+1. Sample all GOV.UK journeys
+1. Find pages that occur between searches 'search->page->search'
+1. Find pages that occur after a search, but don't lead to a search:
+   'search->page->page' or 'search->page->end'
+1. Per page, calculate the ratio of (1) to (2)
+
+[Trello card](https://trello.com/c/Y9WScpCJ/9-what-pages-have-search-bounces-on-all-govuk)
+
+## Summary findings
+
+## Data
+
+### Data caveats
+
+Sessions aren't randomly sampled, we just take the first n that Google BigQuery
+gives us.
+
+### Web analytics
+
+You need access to the BigQuery table
+`govuk-xgov.InsightsDataset.corona_journeys_20200322`.  This holds every page
+visited by any session that included the coronavirus topic page
+`https://www.gov.uk/coronavirus`.
+
+## Load packages
+
+```{r local-variables}
+# Title for graphs
+title <- "Coronavirus search bounces"
+```
+
+```{r library}
+# General
+library(tidyverse)
+```
+
+
+```{r utils}
+# Format to a string to the nearest 1%
+one_percent <- partial(scales::percent, accuracy = 1)
+```
+
+## Download data from BigQuery
+
+Create a dataset called `sessions_raw`.  It's called `raw` because it needs a
+lot of cleaning.
+
+```{r bigquery}
+# Authenticate via the browser (using your own email address)
+bigrquery::bq_auth(email = "duncan.garmonsway@digital.cabinet-office.gov.uk")
+
+# Connect to the dataset
+con <- DBI::dbConnect(bigrquery::bigquery(),
+                      project = "govuk-xgov",
+                      dataset = "InsightsDataset")
+
+# Query a table
+sql <-
+'
+  WITH sample AS (
+    SELECT DISTINCT session_id
+    FROM `govuk-xgov.InsightsDataset.corona_journeys_20200322`
+    -- WHERE visitStartTimestamp >= TIMESTAMP "2020-03-22 00:00:00 UTC"
+    -- AND visitStartTimestamp < TIMESTAMP "2020-03-23 00:00:00 UTC"
+    LIMIT 100000
+  )
+  SELECT
+    main.session_id,
+    main.pagePath AS page,
+    main.event_start_time AS date_time
+  FROM
+    `govuk-xgov.InsightsDataset.corona_journeys_20200322` AS main
+  INNER JOIN sample ON sample.session_id = main.session_id
+'
+# Perform the query
+sessions_raw <- DBI::dbGetQuery(con, sql)
+```
+
+## Find pages following/preceding search
+
+A search URL looks like
+`https://www.gov.uk/search/all?keywords=coronavirus&order=relevance`.
+
+```{r mark-searches}
+searches <-
+  sessions_raw %>%
+  mutate(is_search = str_sub(page, 1, 18) == "www.gov.uk/search/") %>%
+  group_by(session_id) %>%
+  arrange(session_id, date_time) %>%
+  mutate(after_search = lag(is_search, default = FALSE),
+         before_search = lead(is_search, default = FALSE),
+         bounced_back = lead(page, default = "") == lag(page, default = ""),
+         between_same_search = after_search & before_search & bounced_back) %>%
+  ungroup()
+```
+
+How many pages were viewed
+
+* `after_search` = after a search
+* `before_search` = before a search
+* `bounced_back` = bounced back to the previous page (not necessarily a search)
+* `between_same_search` = bounced back to the previous search
+
+```{r count-searches}
+# Frequencies
+frequencies <-
+  searches %>%
+  keep(is.logical) %>%
+  map(table)
+
+frequencies
+
+# Percentages
+frequencies %>%
+  map(prop.table) %>%
+  map_depth(2, one_percent)
+```
+
+## Bounce-back rates per page (not necessarily search)
+
+```{r bounce-back-rates}
+bounce_backs <-
+  searches %>%
+  group_by(session_id) %>%
+  # Look ahead to see if the next page bounced back
+  mutate(bounced_back = lead(bounced_back, default = FALSE)) %>%
+  ungroup()
+
+bounce_back_rates <-
+  bounce_backs %>%
+  count(page, bounced_back) %>%
+  complete(page, bounced_back, fill = list(n = 0)) %>%
+  pivot_wider(id = page,
+              names_from = bounced_back,
+              names_prefix = "bounced_",
+              values_from = n) %>%
+  mutate(rate = bounced_TRUE / (bounced_TRUE + bounced_FALSE))
+```
+
+Graph the distribution of rates, filtering for pages that are visited at
+least 100 times.
+
+```{r bounce-back-rates-density}
+bounce_back_rates %>%
+  filter(bounced_FALSE + bounced_TRUE >= 100) %>%
+  ggplot(aes(rate)) +
+  geom_density() +
+  scale_x_continuous(labels = one_percent) +
+  labs(x = "Percent that bounce back to the same page",
+       y = "",
+       title = "Page bounce-back rates",
+       subtitle = "Distribution of the rate, per page, that users bounce back from the page")
+```
+
+Table the pages with the highest bounce-back rates, filtering for pages that are
+visited at least 100 times.
+
+```{r}
+bounce_back_rates %>%
+  filter(bounced_FALSE + bounced_TRUE >= 100) %>%
+  arrange(desc(rate))
+```
+
+## Search-bounce-back rates per search
+
+```{r search-bounce-back-rates}
+search_bounce_back_rates <-
+  bounce_backs %>%
+  filter(is_search) %>%
+  mutate(page = str_sub(page, 19)) %>%
+  count(page, bounced_back) %>%
+  complete(page, bounced_back, fill = list(n = 0)) %>%
+  pivot_wider(id = page,
+              names_from = bounced_back,
+              names_prefix = "bounced_",
+              values_from = n) %>%
+  mutate(rate = bounced_TRUE / (bounced_TRUE + bounced_FALSE))
+```
+
+Only a few pages are in this category.
+
+```{r}
+search_bounce_back_rates %>%
+  filter(bounced_FALSE + bounced_TRUE >= 100)
+```
+
+Look at one of the worst
+`gov.uk/news-and-communications?topical_events[]=coronavirus-covid-19-uk-government-response`.
+
+It turns out that search is linked to via `News` on the [topic
+page](https://www.gov.uk/coronavirus).  People are scrolling through to visit
+all the news items.  The other searches are similar, apart from Universal
+Credit.
+
+```{r particular-bounce}
+sessions_raw %>%
+  filter(page == "www.gov.uk/search/news-and-communications?topical_events[]=coronavirus-covid-19-uk-government-response") %>%
+  distinct(session_id) %>%
+  semi_join(sessions_raw, ., by = "session_id") %>%
+  arrange(session_id, date_time) %>%
+  head(200)
+```
