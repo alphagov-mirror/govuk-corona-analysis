@@ -7,12 +7,13 @@ func_importdatabq <- function(file_query, name_project, name_dataset){
   #' @param name_project name of GCP BQ project.
   #' @param name_dataset name of dataset that file_query calls the table
   
-  require("DBI", "bigrquery")
-  pckgs <- c("bigrquery")
+  require("DBI")
+  require("bigrquery")
+  pckgs <- c("DBI", "bigrquery")
   source("src/make_data/func_readsql.R")
   
   # 1. check dependencies and data type
-  sapply(pckgs, function(p) if(!p %in% tolower((.packages()))) stop(paste0("package ", p, " required but not found!")))
+  sapply(pckgs, function(p) if(!p %in% rownames(installed.packages())) stop(paste0("package ", p, " required but not found!")))
   
   if(missing(file_query)) stop(paste0("argument 'sql_query' required but not provided!"))
   if(!is.character(file_query)) stop(paste0("'sql_query' must be of type character"))
