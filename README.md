@@ -18,7 +18,7 @@ Project Organization
     │
     ├── .gitignore              <- Files and directories to be ignored by git
     │
-    ├── test_environment.py     <- Python environment tester   
+    ├── test_environment.py     <- Python environment tester
     │
     ├── data
     │   ├── external             <- Data from third party sources.
@@ -59,9 +59,9 @@ Project Organization
         ├── make_visualisations  <- Scripts to create exploratory and results oriented visualizations
         │
         └── tools                <- Any helper scripts go here
-           
-     
-   
+       
+
+
 
 --------
 
@@ -71,58 +71,39 @@ Project Organization
 
 ##  Installing pre-commit hooks
 
-  
-
 This repo uses the Python package `pre-commit` (https://pre-commit.com) to manage pre-commit hooks. Pre-commit hooks are
-
 actions which are run automatically, typically on each commit, to perform some common set of tasks. For example, a pre-commit
-
 hook might be used to run any code linting automatically, providing any warnings before code is committed, ensuring that
-
 all of our code adheres to a certain quality standard.
 
-  
-
 For this repo, we are using `pre-commit` for a number of purposes:
-
-- Checking for AWS or private access keys being committed accidentally
-
+- Checking for any secrets being committed accidentally
 - Checking for any large files (over 5MB) being committed
-
 - Cleaning Jupyter notebooks, which means removing all outputs and execution counts
-
 - Running linting on the `src` directory (catching problems before they get to Concourse, which runs the same check)
 
-  
-
 We have configured `pre-commit` to run automatically _when pushing_ rather than on _every commit_, which should mean we
-
 receive the benefits of `pre-commit` without it getting in the way of regular development.
-
-  
 
 In order for `pre-commit` to run, action is needed to configure it on your system.
 
-  
-
 - Run `pip install -r requirements-dev.txt` to install `pre-commit` in your Python environment
+- Run `pre-commit install` to set-up `pre-commit` to run when code is _committed_. By running on each commit, we ensure that
+`pre-commit` will be able to detect all errors and keep our repo in a healthy state.
 
-- Run `pre-commit install -t pre-push` to set-up `pre-commit` to run when code is _pushed_
-
-  
 
 ###  Note on Jupyter notebook cleaning
 
-  
+
 
 It may be necessary or useful to keep certain output cells of a Jupyter notebook, for example charts or graphs visualising
 
 some set of data. To do this, add the following comment at the top of the input block:
 
-  
+
 
 `# [keep_output]`
 
-  
+
 
 This will tell `pre-commit` not to strip the resulting output of this cell, allowing it to be committed.

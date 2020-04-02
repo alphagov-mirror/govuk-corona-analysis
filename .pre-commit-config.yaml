@@ -6,6 +6,12 @@ repos:
     hooks:
     -   id: flake8
         args: ['src']
+-   repo: https://github.com/Yelp/detect-secrets
+    rev: v0.13.1
+    hooks:
+    -   id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: .*/tests/.*
 -   repo: https://github.com/aflc/pre-commit-jupyter
     rev: v1.1.0
     hooks:
@@ -19,7 +25,5 @@ repos:
     hooks:
     -   id: check-added-large-files
         args: ['--maxkb=5120']
-    -   id: detect-aws-credentials
-    -   id: detect-private-key
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
