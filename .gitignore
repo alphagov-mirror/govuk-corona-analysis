@@ -140,3 +140,9 @@ data/
 
 # Ignore the `.secrets` file
 .secrets
+
+# Ignore the `models` folder
+models/
+
+# Ignore the `reports` folder
+reports/
