@@ -1,8 +1,7 @@
 SELECT 
-  visitStartTimestamp
-  ,deviceCategory
+  EXTRACT(DATE FROM visitStartTimestamp)
   ,COUNT(DISTINCT CONCAT(session_id, "-", hit_Number)) AS pageviews
-FROM `govuk-xgov.InsightsDataset.covid19ukgovresponse`
+FROM `govuk-xgov.xgov_data_access.Basetable_corona`
 WHERE type = "PAGE"
-GROUP BY visitStartTimestamp
-  ,deviceCategory
+  AND pagePath LIKE "%coronavirus-covid-19-uk-government-response%"
+GROUP BY EXTRACT(DATE FROM visitStartTimestamp)
