@@ -1,4 +1,4 @@
-SELECT 
+SELECT
   EXTRACT(DATE FROM visitStartTimestamp)
   ,COUNT(DISTINCT CONCAT(session_id, "-", hit_Number)) AS pageviews
 FROM `govuk-xgov.xgov_data_access.Basetable_corona`
