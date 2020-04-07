@@ -80,7 +80,7 @@ nhs_gp_practice_codes <-
 dobs <- dob(n)
 
 #' NHS numbers
-nhs_numbers = ch_integer(n = n, min = 1000000000, max = 9999999999)
+nhs_numbers <- ch_integer(n = n, min = 1000000000, max = 9999999999)
 
 #' Phone numbers
 phone_number_calls = ch_phone_number(n, locale = "en_GB")
