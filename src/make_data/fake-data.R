@@ -97,24 +97,27 @@ master <-
     #
     # NHS columns
     #
-    nhs_nhs_number = nhs_numbers,
-    nhs_dob = dobs,
-    nhs_dob_year = lubridate::year(dobs),
-    nhs_dob_month = lubridate::month(dobs),
-    nhs_dob_day = lubridate::day(dobs),
-    nhs_patient_title = r_sample(n, c("Mr", "Ms", "Dr", "Prof")),
-    nhs_patients_first_name = first_names,
-    nhs_patients_other_name = other_names,
-    nhs_patients_surname = last_names,
-    nhs_patients_address_line1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
-    nhs_patients_address_line2 = map_chr(addresses, ~ .x$city()),
-    nhs_patients_address_line3 = map_chr(addresses, ~ .x$street_name()),
-    nhs_patients_address_line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
-    nhs_patients_address_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    nhs_postcode = map_chr(addresses, ~ .x$postcode()),
-    nhs_practice_code = nhs_gp_practice_codes$code,
-    nhs_practice_name = nhs_gp_practice_codes$name,
-    nhs_contact_telephone = nhs_gp_practice_codes$telephone,
+    nhsnumber = nhs_numbers,
+    dateofbirth = dobs,
+    patienttitle = r_sample(n, c("Mr", "Ms", "Dr", "Prof")),
+    patientfirstname = first_names,
+    patientothername = other_names,
+    patientsurname = last_names,
+    patientaddress_line1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
+    patientaddress_line2 = map_chr(addresses, ~ .x$city()),
+    patientaddress_line3 = map_chr(addresses, ~ .x$street_name()),
+    patientaddress_line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
+    patientaddress_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
+    patientaddress_postcode = map_chr(addresses, ~ .x$postcode()),
+    gppracticecode = nhs_gp_practice_codes$code,
+    laofresidence= map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
+    rowid = seq_len(n),
+    oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
+    oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
+    mobile = ch_phone_number(n, locale = "en_GB"),
+    patient_landline = ch_phone_number(n, locale = "en_GB"),
+    practice_name = nhs_gp_practice_codes$name,
+    contact_telephone = nhs_gp_practice_codes$telephone,
     #
     # Web columns
     #
@@ -181,24 +184,27 @@ write_delim(master, here("data/fake-data/master.csv"), delim = "|")
 # Column names -----------------------------------------------------------------
 
 nhs_column_names <-
-  c("nhs_nhs_number" ,
-    "nhs_dob" ,
-    "nhs_dob_year" ,
-    "nhs_dob_month" ,
-    "nhs_dob_day" ,
-    "nhs_patient_title" ,
-    "nhs_patients_first_name" ,
-    "nhs_patients_other_name" ,
-    "nhs_patients_surname" ,
-    "nhs_patients_address_line1" ,
-    "nhs_patients_address_line2" ,
-    "nhs_patients_address_line3" ,
-    "nhs_patients_address_line4" ,
-    "nhs_patients_address_line5" ,
-    "nhs_postcode" ,
-    "nhs_practice_code" ,
-    "nhs_practice_name" ,
-    "nhs_contact_telephone")
+  c("nhsnumber",
+    "dateofbirth",
+    "patienttitle",
+    "patientfirstname",
+    "patientothername",
+    "patientsurname",
+    "patientaddress_line1",
+    "patientaddress_line2",
+    "patientaddress_line3",
+    "patientaddress_line4",
+    "patientaddress_line5",
+    "patientaddress_postcode",
+    "gppracticecode",
+    "laofresidence",
+    "rowid",
+    "oslaua",
+    "oscty",
+    "mobile",
+    "patient_landline",
+    "practice_name",
+    "contact_telephone")
 
 web_column_names <-
   c("live_in_england",
@@ -271,18 +277,18 @@ write_delim(ivr_list, here("data/fake-data/ivr.csv"), delim = "|")
 
 # NHS only
 nhs_list %>%
-  anti_join(web_list, by = c("nhs_nhs_number" = "nhs_number")) %>%
-  anti_join(ivr_list, by = c("nhs_nhs_number" = "ivr_nhs_number")) %>%
+  anti_join(web_list, by = c("nhsnumber" = "nhs_number")) %>%
+  anti_join(ivr_list, by = c("nhsnumber" = "ivr_nhs_number")) %>%
   nrow()
 
 # NHS and Web
 nhs_list %>%
-  inner_join(web_list, by = c("nhs_nhs_number" = "nhs_number")) %>%
+  inner_join(web_list, by = c("nhsnumber" = "nhs_number")) %>%
   nrow()
 
 # Web only
 web_list %>%
-  anti_join(nhs_list, by = c("nhs_number" = "nhs_nhs_number")) %>%
+  anti_join(nhs_list, by = c("nhs_number" = "nhsnumber")) %>%
   nrow()
 
 # IVR and Web
