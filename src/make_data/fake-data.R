@@ -99,9 +99,9 @@ master <-
     #
     nhs_nhs_number = nhs_numbers,
     nhs_dob = dobs,
-    nhs_dob_year = lubridate::day(dobs),
+    nhs_dob_year = lubridate::year(dobs),
     nhs_dob_month = lubridate::month(dobs),
-    nhs_dob_day = lubridate::year(dobs),
+    nhs_dob_day = lubridate::day(dobs),
     nhs_patient_title = r_sample(n, c("Mr", "Ms", "Dr", "Prof")),
     nhs_patients_first_name = first_names,
     nhs_patients_other_name = other_names,
@@ -147,10 +147,10 @@ master <-
     dietary_requirements = r_sample(n, c("yes", "no")),
     medical_conditions = r_sample(n, c("YES, I HAVE A MEDICAL CONDITION THAT MAKES ME EXTREMELY VULNERABLE TO CORONAVIRUS", "YES, I HAVE ONE OF THE MEDICAL CONDITIONS ON THE LIST")),
     essential_supplies = r_sample(n, c("yes", "no")),
-    updated_at = ch_unix_time(n) + runif(n),
+    updated_at = ch_date_time(n) %>% reduce(c),
     referenceid = reference_id, # A duplicate column that exists in prod
-    unixtimestamp = ch_unix_time(n) + runif(n),
-    created_at = ch_unix_time(n) + runif(n),
+    unixtimestamp = ch_date_time(n) %>% reduce(c),
+    created_at = ch_date_time(n) %>% reduce(c),
     #
     # IVR columns
     #
@@ -176,7 +176,7 @@ master <-
 
 glimpse(master)
 
-write_csv(master, "master.csv")
+write_delim(master, here("data/fake-data/master.csv"), delim = "|")
 
 # Column names -----------------------------------------------------------------
 
@@ -263,9 +263,9 @@ nhs_list <- select_at(nhs_list, nhs_column_names)
 web_list <- select_at(web_list, web_column_names)
 ivr_list <- select_at(ivr_list, ivr_column_names)
 
-write_csv(nhs_list, "nhs.csv")
-write_csv(web_list, "web.csv")
-write_csv(ivr_list, "ivr.csv")
+write_delim(nhs_list, here("data/fake-data/nhs.csv"), delim = "|")
+write_delim(web_list, here("data/fake-data/web.csv"), delim = "|")
+write_delim(ivr_list, here("data/fake-data/ivr.csv"), delim = "|")
 
 # Check overlaps between lists -------------------------------------------------
 
