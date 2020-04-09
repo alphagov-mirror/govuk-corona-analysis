@@ -148,7 +148,7 @@ df %>%
     # legend.box.background = element_rect(fill = "transparent") # get rid of legend panel bg
   )
 
-ggsave(here("img", "streamgraph-legend.png"), bg = "transparent")
+ggsave(here("img", "streamgraph-shape.png"), bg = "transparent")
 ```
 
 ```{r streamgraph-ggplot-both-sides, fig.width = 960/72, fig.height = 640/72, echo = FALSE, message = FALSE}
