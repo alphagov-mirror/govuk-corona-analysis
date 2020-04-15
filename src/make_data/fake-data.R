@@ -87,8 +87,8 @@ nhs_gp_practice_codes <-
 #' CCG codes
 ccg_codes <-
   here("data/ccg-codes/Clinical_Commissioning_Groups_April_2020_Names_and_Codes_in_England.csv") %>%
-  read_csv() %>% 
-  select(1:3) %>% 
+  read_csv() %>%
+  select(1:3) %>%
   rename(ward = CCG20CD,
          ccgcode = CCG20CDH,
          ccgname = CCG20NM)
@@ -109,10 +109,10 @@ other_names = ch_name(n)
 last_names = ch_name(n)
 
 #' Flags
-flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE), 
-                nrow = m, ncol = n) %>% 
-  t() %>% 
-  as.data.frame() %>% 
+flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE),
+                nrow = m, ncol = n) %>%
+  t() %>%
+  as.data.frame() %>%
   rename(flag_chemo_radiotherapy = V1,
          flag_respiratory = V2,
          flag_haemotologicalcancers = V3,
@@ -146,19 +146,19 @@ master <-
     patient_landline = ch_phone_number(n, locale = "en_GB"),
     oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     ccg = pull(sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE)),
-    
+
     flag_chemo_radiotherapy = flags$flag_chemo_radiotherapy,
     flag_respiratory = flags$flag_respiratory,
     flag_haematologicalcancers = flags$flag_haemotologicalcancers,
     flag_pregnantwithcongentialheartdefect = flags$flag_pregnantwithcongentialheartdefect,
     flag_transplant = flags$flag_transplant,
     flag_rarediseases = flags$flag_rarediseases,
-    
+
     gender = pull(sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE)),
-    
+
     flag_pdssensitive = flags$flag_pdssensitive,
     flag_pdsinformallydeceased = flags$flag_pdsinformallydeceased,
-    
+
     oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     #
     # Web columns
