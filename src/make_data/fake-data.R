@@ -139,13 +139,13 @@ master <-
     patientaddress_line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     patientaddress_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     patientaddress_postcode = map_chr(addresses, ~ .x$postcode()),
-    gppracticecode = nhs_gp_practice_codes$code,
+    gppractice_code = nhs_gp_practice_codes$code,
     practice_name = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
     mobile = ch_phone_number(n, locale = "en_GB"),
     patient_landline = ch_phone_number(n, locale = "en_GB"),
     oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    ccg = sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE),
+    ccg = pull(sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE)),
     
     flag_chemo_radiotherapy = flags$flag_chemo_radiotherapy,
     flag_respiratory = flags$flag_respiratory,
@@ -154,7 +154,7 @@ master <-
     flag_transplant = flags$flag_transplant,
     flag_rarediseases = flags$flag_rarediseases,
     
-    gender = sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE),
+    gender = pull(sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE)),
     
     flag_pdssensitive = flags$flag_pdssensitive,
     flag_pdsinformallydeceased = flags$flag_pdsinformallydeceased,
