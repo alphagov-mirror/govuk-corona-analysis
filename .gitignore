@@ -142,3 +142,9 @@ data/
 .secrets
 
 *.DS_Store
+
+# Ignore the `models` folder
+models/
+
+# Ignore the `reports` folder
+reports/
