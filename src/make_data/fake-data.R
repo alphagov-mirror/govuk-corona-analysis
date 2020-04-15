@@ -25,6 +25,9 @@
 # Total number of records to generate across all datasets
 total_records <- 1000
 
+# Total flags to have as columns in NHS list only
+total_flags <- 8
+
 # Percentage to appear in NHS list only
 nhs_perc <- .1
 
@@ -51,6 +54,7 @@ library(here)
 # Master records ---------------------------------------------------------------
 
 n <- total_records
+m <- total_flags
 set.seed(2019-04-06)
 
 # random_postcodes <- function(n) {
@@ -104,6 +108,20 @@ first_names = ch_name(n)
 other_names = ch_name(n)
 last_names = ch_name(n)
 
+#' Flags
+flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE), 
+                nrow = m, ncol = n) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  rename(flag_chemo_radiotherapy = V1,
+         flag_respiratory = V2,
+         flag_haemotologicalcancers = V3,
+         flag_pregnantwithcongentialheartdefect = V4,
+         flag_transplant = V5,
+         flag_rarediseases = V6,
+         flag_pdssensitive = V7,
+         flag_pdsinformallydeceased = V8)
+
 # Master records ---------------------------------------------------------------
 master <-
   tibble(
@@ -128,7 +146,19 @@ master <-
     patient_landline = ch_phone_number(n, locale = "en_GB"),
     oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     ccg = sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE),
+    
+    flag_chemo_radiotherapy = flags$flag_chemo_radiotherapy,
+    flag_respiratory = flags$flag_respiratory,
+    flag_haematologicalcancers = flags$flag_haemotologicalcancers,
+    flag_pregnantwithcongentialheartdefect = flags$flag_pregnantwithcongentialheartdefect,
+    flag_transplant = flags$flag_transplant,
+    flag_rarediseases = flags$flag_rarediseases,
+    
     gender = sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE),
+    
+    flag_pdssensitive = flags$flag_pdssensitive,
+    flag_pdsinformallydeceased = flags$flag_pdsinformallydeceased,
+    
     oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     #
     # Web columns
@@ -211,7 +241,15 @@ nhs_column_names <-
     "landline",
     "oslaua",
     "ccg",
+    "flag_chemo_radiotherapy",
+    "flag_respiratory",
+    "flag_haematologicalcancers",
+    "flag_pregnantwithcongentialheartdefect",
+    "flag_transplant",
+    "flag_rarediseases",
     "gender",
+    "flag_pdssensitive",
+    "flag_pdsinformallydeceased",
     "oscty")
 
 web_column_names <-
