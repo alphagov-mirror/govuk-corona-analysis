@@ -12,9 +12,13 @@
 # * Ideally we'd be looking at a few thousand for each.
 
 # Preparation:
-# Download  the dataset `epraccur` from
+# Download the dataset `epraccur` from
 # https://digital.nhs.uk/services/organisation-data-service/data-downloads/gp-and-gp-practice-related-data
 # and extract it into a folder called "data/nhs-gp-codes"
+
+# Download the dataset `Clinical_Commissioning_Groups_April_2020_Names_and_Codes_in_England.csv` from
+# https://geoportal.statistics.gov.uk/datasets/clinical-commissioning-groups-april-2020-names-and-codes-in-england
+# and extract it into a folder called "data/ccg-codes"
 
 # Configuration ----------------------------------------------------------------
 
@@ -76,6 +80,11 @@ nhs_gp_practice_codes <-
   set_names(c("code", "name", "telephone")) %>%
   sample_n(n)
 
+#' CCG codes
+ccg_codes <-
+  here("data/ccg-codes/Clinical_Commissioning_Groups_April_2020_Names_and_Codes_in_England.csv") %>%
+  read_csv(col_names = FALSE)
+
 #' Dates of birth
 dobs <- dob(n)
 
@@ -109,12 +118,12 @@ master <-
     patientaddress_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     patientaddress_postcode = map_chr(addresses, ~ .x$postcode()),
     gppracticecode = nhs_gp_practice_codes$code,
-    oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
-    mobile = ch_phone_number(n, locale = "en_GB"),
-    patient_landline = ch_phone_number(n, locale = "en_GB"),
     practice_name = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
+    mobile = ch_phone_number(n, locale = "en_GB"),
+    patient_landline = ch_phone_number(n, locale = "en_GB"),
+    oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
+    oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     #
     # Web columns
     #
@@ -190,12 +199,12 @@ nhs_column_names <-
     "patientaddress_line5",
     "patientaddress_postcode",
     "gppracticecode",
-    "oslaua",
-    "oscty",
+    "practice_name",
+    "contact_telephone",
     "mobile",
     "patient_landline",
-    "practice_name",
-    "contact_telephone")
+    "oslaua",
+    "oscty")
 
 web_column_names <-
   c("live_in_england",
