@@ -140,3 +140,5 @@ data/
 
 # Ignore the `.secrets` file
 .secrets
+
+*.DS_Store
