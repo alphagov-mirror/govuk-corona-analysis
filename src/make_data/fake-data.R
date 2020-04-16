@@ -104,9 +104,31 @@ phone_number_calls = ch_phone_number(n, locale = "en_GB")
 phone_number_texts = ch_phone_number(n, locale = "en_GB")
 
 #' Names
-first_names = ch_name(n)
-other_names = ch_name(n)
-last_names = ch_name(n)
+## generate unique vector of prefixes and suffixes
+x <- PersonProvider$new()
+vec_prefix <- vector(mode = "character", length = n)
+vec_suffix <- vector(mode = "character", length = n)
+for (i in 1:n) {
+  vec_prefix[i] <- x$prefix()
+  vec_suffix[i] <- x$suffix()
+}
+## take unique entries
+vec_prefix <- unique(x = vec_prefix)
+vec_suffix <- unique(x = vec_suffix)
+## collapse vector of elements into one string separate with regex "|"
+vec_prefix <- paste0(vec_prefix, " ", collapse = "|")
+vec_suffix <- paste0(" ", vec_suffix, collapse = "|")
+
+## generate fake names
+names <- ch_name(n)
+
+## remove prefixes and suffixes
+names <- str_replace(string = names, pattern = regex(vec_prefix, ignore_case = FALSE), replacement = "")
+names <- str_replace(string = names, pattern = regex(vec_suffix, ignore_case = FALSE), replacement = "")
+
+first_names = str_split(string = names, pattern = " ", simplify = TRUE)[,1]
+other_names = str_split(string = ch_name(n), pattern = " ", simplify = TRUE)[,2]
+last_names = str_split(string = names, pattern = " ", simplify = TRUE)[,2]
 
 #' Flags
 flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE),
@@ -218,7 +240,7 @@ master <-
 
 glimpse(master)
 
-write_delim(master, here("data/fake-data/master.csv"), delim = "|")
+write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE)
 
 # Column names -----------------------------------------------------------------
 
@@ -312,9 +334,9 @@ nhs_list <- select_at(nhs_list, nhs_column_names)
 web_list <- select_at(web_list, web_column_names)
 ivr_list <- select_at(ivr_list, ivr_column_names)
 
-write_delim(nhs_list, here("data/fake-data/nhs.csv"), delim = "|")
-write_delim(web_list, here("data/fake-data/web.csv"), delim = "|")
-write_delim(ivr_list, here("data/fake-data/ivr.csv"), delim = "|")
+write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE)
+write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE)
+write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE)
 
 # Check overlaps between lists -------------------------------------------------
 
