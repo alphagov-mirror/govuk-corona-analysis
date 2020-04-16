@@ -334,9 +334,17 @@ nhs_list <- select_at(nhs_list, nhs_column_names)
 web_list <- select_at(web_list, web_column_names)
 ivr_list <- select_at(ivr_list, ivr_column_names)
 
-write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE)
-write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE)
-write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE)
+
+# Duplicating -------------------------------------------------------------
+## 1. create row duplicates
+nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc, replace = TRUE)
+
+## 2. create change of status 'duplicates'
+nhs_list_dupe_changestatus <- 
+
+write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
+write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
+write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE, row.names = FALSE)
 
 # Check overlaps between lists -------------------------------------------------
 
