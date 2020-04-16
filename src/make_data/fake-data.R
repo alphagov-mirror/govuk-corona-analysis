@@ -240,7 +240,7 @@ master <-
 
 glimpse(master)
 
-write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE)
+write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE, row.names = FALSE)
 
 # Column names -----------------------------------------------------------------
 
@@ -337,10 +337,14 @@ ivr_list <- select_at(ivr_list, ivr_column_names)
 
 # Duplicating -------------------------------------------------------------
 ## 1. create row duplicates
-nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc, replace = TRUE)
+nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
 
 ## 2. create change of status 'duplicates'
-nhs_list_dupe_changestatus <- 
+nhs_list_dupe_changestatus <- nhs_list_dupe_real %>% 
+  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", 0, 1)))
+
+## 3. rowbind to original list
+nhs_list <- rbind(nhs_list, nhs_list_dupe_real, nhs_list_dupe_changestatus)
 
 write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
