@@ -65,6 +65,8 @@ set.seed(2019-04-06)
 # Generate some random addresses and places
 addresses <- map(seq_len(n), ~ AddressProvider$new("en_GB"))
 places <- map_dfr(seq_len(n), ~ random_place())
+## generate real random UK postcodes
+postcodes <- map_chr(.x = seq_len(n), .f = ~ random_postcode()$postcode)
 
 #' Create random reference IDs
 reference_ids <- function(n) {
@@ -160,7 +162,7 @@ master <-
     patientaddress_line3 = map_chr(addresses, ~ .x$street_name()),
     patientaddress_line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     patientaddress_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    patientaddress_postcode = map_chr(addresses, ~ .x$postcode()),
+    patientaddress_postcode = postcodes,
     gppracticecode = nhs_gp_practice_codes$code,
     practice_name = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
