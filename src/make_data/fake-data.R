@@ -100,6 +100,7 @@ dobs <- dob(n)
 
 #' NHS numbers
 nhs_numbers <- ch_integer(n = n, min = 1000000000, max = 9999999999)
+nhs_numbers_web <- c(nhs_numbers[1:(n*(m-1)/m)], ch_integer(n = n/m, min = 1000000000, max = 9999999999))
 
 #' Phone numbers
 phone_number_calls = ch_phone_number(n, locale = "en_GB")
@@ -197,7 +198,7 @@ master <-
     address_l2 = map_chr(addresses, ~ .x$street_name()),
     county = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     postcode = map_chr(addresses, ~ .x$postcode()),
-    nhs_number = nhs_numbers,
+    nhs_number = nhs_numbers_web,
     carry_supplies = r_sample(n, c("yes", "no")),
     reference_id = reference_ids(n),
     full_dob = dobs,
