@@ -114,9 +114,11 @@ Times](https://www.nytimes.com/interactive/2020/04/03/us/coronavirus-stay-home-r
 
 ## Interpolate
 
-The best idea above interpolated between points with a cardinal spline.  Here is
-a useful [review of splines in
+The best idea above (the streamgraph package) interpolated between points with a
+cardinal spline.  Here is a useful [review of splines in
 R](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-019-0666-3).
+This makes it easier for the eye to follow the individual terms as they change
+over time, because their shapes are smoother, less spikey.
 
 Let's use the `stats::spline()` function, because it's good enough.
 
