@@ -706,6 +706,14 @@ ggsave(here("img", "streamgraph-daily-trending.png"))
 
 ## Breakout detection
 
+Identify statistically significant breakout points in the search terms.  This
+might be useful for visualisation, to choose which series to show, or to avoid
+showing insignificant fluctuations.  It didn't really work though on default
+settings, and fine-tuning should be a separate project.  The default settings
+assumed much more data, and in general I think the {BreakoutDetection} needs
+more data points, e.g. hourly.  Other methods are demonstrated in these
+[slides](https://docs.google.com/presentation/d/1WEH5p1TalWCoBWbGDDvboEdMpo8hZgN5iSHl2cFdM8M/edit?usp=sharing).
+
 ```{r breakout-detection}
 search_terms_complete <-
   search_terms %>%
