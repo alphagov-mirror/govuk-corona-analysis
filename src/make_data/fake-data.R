@@ -12,14 +12,21 @@
 # * Ideally we'd be looking at a few thousand for each.
 
 # Preparation:
-# Download  the dataset `epraccur` from
+# Download the dataset `epraccur` from
 # https://digital.nhs.uk/services/organisation-data-service/data-downloads/gp-and-gp-practice-related-data
 # and extract it into a folder called "data/nhs-gp-codes"
+
+# Download the dataset `Clinical_Commissioning_Groups_April_2020_Names_and_Codes_in_England.csv` from
+# https://geoportal.statistics.gov.uk/datasets/clinical-commissioning-groups-april-2020-names-and-codes-in-england
+# and extract it into a folder called "data/ccg-codes"
 
 # Configuration ----------------------------------------------------------------
 
 # Total number of records to generate across all datasets
 total_records <- 1000
+
+# Total flags to have as columns in NHS list only
+total_flags <- 8
 
 # Percentage to appear in NHS list only
 nhs_perc <- .1
@@ -47,6 +54,7 @@ library(here)
 # Master records ---------------------------------------------------------------
 
 n <- total_records
+m <- total_flags
 set.seed(2019-04-06)
 
 # random_postcodes <- function(n) {
@@ -57,6 +65,8 @@ set.seed(2019-04-06)
 # Generate some random addresses and places
 addresses <- map(seq_len(n), ~ AddressProvider$new("en_GB"))
 places <- map_dfr(seq_len(n), ~ random_place())
+## generate real random UK postcodes
+postcodes <- map_chr(.x = seq_len(n), .f = ~ random_postcode()$postcode)
 
 #' Create random reference IDs
 reference_ids <- function(n) {
@@ -76,20 +86,67 @@ nhs_gp_practice_codes <-
   set_names(c("code", "name", "telephone")) %>%
   sample_n(n)
 
+#' CCG codes
+ccg_codes <-
+  here("data/ccg-codes/Clinical_Commissioning_Groups_April_2020_Names_and_Codes_in_England.csv") %>%
+  read_csv() %>%
+  select(1:3) %>%
+  rename(ward = CCG20CD,
+         ccgcode = CCG20CDH,
+         ccgname = CCG20NM)
+
 #' Dates of birth
 dobs <- dob(n)
+dobs <- str_remove_all(string = dobs, pattern = "-")
 
 #' NHS numbers
 nhs_numbers <- ch_integer(n = n, min = 1000000000, max = 9999999999)
+nhs_numbers_web <- c(nhs_numbers[1:(n*(m-1)/m)], ch_integer(n = n/m, min = 1000000000, max = 9999999999))
 
 #' Phone numbers
 phone_number_calls = ch_phone_number(n, locale = "en_GB")
 phone_number_texts = ch_phone_number(n, locale = "en_GB")
 
 #' Names
-first_names = ch_name(n)
-other_names = ch_name(n)
-last_names = ch_name(n)
+## generate unique vector of prefixes and suffixes
+x <- PersonProvider$new()
+vec_prefix <- vector(mode = "character", length = n)
+vec_suffix <- vector(mode = "character", length = n)
+for (i in 1:n) {
+  vec_prefix[i] <- x$prefix()
+  vec_suffix[i] <- x$suffix()
+}
+## take unique entries
+vec_prefix <- unique(x = vec_prefix)
+vec_suffix <- unique(x = vec_suffix)
+## collapse vector of elements into one string separate with regex "|"
+vec_prefix <- paste0(vec_prefix, " ", collapse = "|")
+vec_suffix <- paste0(" ", vec_suffix, collapse = "|")
+
+## generate fake names
+names <- ch_name(n)
+
+## remove prefixes and suffixes
+names <- str_replace(string = names, pattern = regex(vec_prefix, ignore_case = FALSE), replacement = "")
+names <- str_replace(string = names, pattern = regex(vec_suffix, ignore_case = FALSE), replacement = "")
+
+first_names = str_split(string = names, pattern = " ", simplify = TRUE)[,1]
+other_names = str_split(string = ch_name(n), pattern = " ", simplify = TRUE)[,2]
+last_names = str_split(string = names, pattern = " ", simplify = TRUE)[,2]
+
+#' Flags
+flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE),
+                nrow = m, ncol = n) %>%
+  t() %>%
+  as.data.frame() %>%
+  rename(flag_chemo_radiotherapy = V1,
+         flag_respiratory = V2,
+         flag_haemotologicalcancers = V3,
+         flag_pregnantwithcongentialheartdefect = V4,
+         flag_transplant = V5,
+         flag_rarediseases = V6,
+         flag_pdssensitive = V7,
+         flag_pdsinformallydeceased = V8)
 
 # Master records ---------------------------------------------------------------
 master <-
@@ -99,7 +156,6 @@ master <-
     #
     nhsnumber = nhs_numbers,
     dateofbirth = dobs,
-    patienttitle = r_sample(n, c("Mr", "Ms", "Dr", "Prof")),
     patientfirstname = first_names,
     patientothername = other_names,
     patientsurname = last_names,
@@ -108,16 +164,28 @@ master <-
     patientaddress_line3 = map_chr(addresses, ~ .x$street_name()),
     patientaddress_line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     patientaddress_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    patientaddress_postcode = map_chr(addresses, ~ .x$postcode()),
+    patientaddress_postcode = postcodes,
     gppracticecode = nhs_gp_practice_codes$code,
-    laofresidence= map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    rowid = seq_len(n),
-    oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
-    mobile = ch_phone_number(n, locale = "en_GB"),
-    patient_landline = ch_phone_number(n, locale = "en_GB"),
     practice_name = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
+    mobile = ch_phone_number(n, locale = "en_GB"),
+    patient_landline = ch_phone_number(n, locale = "en_GB"),
+    oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
+    ccg = pull(sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE)),
+
+    flag_chemo_radiotherapy = flags$flag_chemo_radiotherapy,
+    flag_respiratory = flags$flag_respiratory,
+    flag_haematologicalcancers = flags$flag_haemotologicalcancers,
+    flag_pregnantwithcongentialheartdefect = flags$flag_pregnantwithcongentialheartdefect,
+    flag_transplant = flags$flag_transplant,
+    flag_rarediseases = flags$flag_rarediseases,
+
+    gender = pull(sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE)),
+
+    flag_pdssensitive = flags$flag_pdssensitive,
+    flag_pdsinformallydeceased = flags$flag_pdsinformallydeceased,
+
+    oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     #
     # Web columns
     #
@@ -131,13 +199,10 @@ master <-
     address_l2 = map_chr(addresses, ~ .x$street_name()),
     county = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     postcode = map_chr(addresses, ~ .x$postcode()),
-    nhs_number = nhs_numbers,
+    nhs_number = nhs_numbers_web,
     carry_supplies = r_sample(n, c("yes", "no")),
     reference_id = reference_ids(n),
-    dob_day = lubridate::day(dobs),
-    dob_month = lubridate::month(dobs),
-    dob_year = lubridate::year(dobs),
-    full_dob = dobs,
+    full_dob = dob(n = n),
     session_id = uuid(n, drop_hyphens = TRUE),
     csrf_token = uuid(n, drop_hyphens = TRUE),
     phone_number_calls = phone_number_calls,
@@ -179,14 +244,13 @@ master <-
 
 glimpse(master)
 
-write_delim(master, here("data/fake-data/master.csv"), delim = "|")
+write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE, row.names = FALSE)
 
 # Column names -----------------------------------------------------------------
 
 nhs_column_names <-
   c("nhsnumber",
     "dateofbirth",
-    "patienttitle",
     "patientfirstname",
     "patientothername",
     "patientsurname",
@@ -197,14 +261,22 @@ nhs_column_names <-
     "patientaddress_line5",
     "patientaddress_postcode",
     "gppracticecode",
-    "laofresidence",
-    "rowid",
-    "oslaua",
-    "oscty",
+    "practice_name",
+    "contact_telephone",
     "mobile",
     "patient_landline",
-    "practice_name",
-    "contact_telephone")
+    "oslaua",
+    "ccg",
+    "flag_chemo_radiotherapy",
+    "flag_respiratory",
+    "flag_haematologicalcancers",
+    "flag_pregnantwithcongentialheartdefect",
+    "flag_transplant",
+    "flag_rarediseases",
+    "gender",
+    "flag_pdssensitive",
+    "flag_pdsinformallydeceased",
+    "oscty")
 
 web_column_names <-
   c("live_in_england",
@@ -219,9 +291,6 @@ web_column_names <-
     "nhs_number",
     "carry_supplies",
     "reference_id",
-    "dob_day",
-    "dob_month",
-    "dob_year",
     "full_dob",
     "session_id",
     "csrf_token",
@@ -269,9 +338,21 @@ nhs_list <- select_at(nhs_list, nhs_column_names)
 web_list <- select_at(web_list, web_column_names)
 ivr_list <- select_at(ivr_list, ivr_column_names)
 
-write_delim(nhs_list, here("data/fake-data/nhs.csv"), delim = "|")
-write_delim(web_list, here("data/fake-data/web.csv"), delim = "|")
-write_delim(ivr_list, here("data/fake-data/ivr.csv"), delim = "|")
+
+# Duplicating -------------------------------------------------------------
+## 1. create row duplicates
+nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
+
+## 2. create change of status 'duplicates'
+nhs_list_dupe_changestatus <- nhs_list_dupe_real %>%
+  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", 0, 1)))
+
+## 3. rowbind to original list
+nhs_list <- rbind(nhs_list, nhs_list_dupe_real, nhs_list_dupe_changestatus)
+
+write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
+write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
+write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE, row.names = FALSE)
 
 # Check overlaps between lists -------------------------------------------------
 

@@ -141,6 +141,8 @@ data/
 # Ignore the `.secrets` file
 .secrets
 
+*.DS_Store
+
 # Ignore the `models` folder
 models/
 
