@@ -124,7 +124,10 @@ Let's use the `stats::spline()` function, because it's good enough.
 
 ### Create a generic streamgraph shape to use in a legend
 
-```{r streamgraph-legend, include = FALSE, message = FALSE}
+This creates a generic shape of a series of a streamgraph, which was then
+imported into Google Draw to add text and create `streamgraph-legend.png`
+
+```{r streamgraph-legend, message = FALSE}
 x <- 0:3
 y1 <- c(0, 2, 1.5, 1)
 y2 <- c(0, -1.5, -2, -1)
