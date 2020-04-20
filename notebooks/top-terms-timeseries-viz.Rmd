@@ -211,6 +211,10 @@ interpolations <-
   inner_join(terms_colours, by = "term") %>%
   arrange(desc(term))
 
+# How much space there is between this term and the x-axis a given day.  This
+# is to position the labels.  E.g. if there are two other terms closer to the
+# x-axis, their `n` will determine how high the label needs to be.  It also has
+# to account for terms positioned below the x-axis.
 n_below_term <- function(term, dttm) {
   scale <-
     interpolations %>%
