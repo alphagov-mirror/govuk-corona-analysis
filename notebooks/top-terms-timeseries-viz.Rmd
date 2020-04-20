@@ -122,6 +122,8 @@ over time, because their shapes are smoother, less spikey.
 
 Let's use the `stats::spline()` function, because it's good enough.
 
+### Create a generic streamgraph shape to use in a legend
+
 ```{r streamgraph-legend, include = FALSE, message = FALSE}
 x <- 0:3
 y1 <- c(0, 2, 1.5, 1)
@@ -152,6 +154,36 @@ df %>%
 
 ggsave(here("img", "streamgraph-shape.png"), bg = "transparent")
 ```
+
+### Draw a streamgraph
+
+1. Choose which terms to plot.  I choose any term that has appeared among the
+   top n on any day.  `n = 3` seems to be suitable.  So unless a term has broken
+   into the top 3 on at least one day, it won't be plotted at all.  This is to
+   keep the chart uncluttered, and to make labelling easier.  An alternative
+   would be to plot every term, and only label the prominent ones.
+2. Interpolate between data points using a smoothing function (a spline in this
+   case).  This makes it easier for the eye to track the progress of each term.
+   The ggplot2 package supports smoothers, e.g. `geom_smooth()`, but I couldn't
+   get them to work for a stacked area plot.
+3. Put some terms below the x-axis, which makes it easier to for the eye to see
+   terms at once, because their shapes are more distinctive.  Otherwise, with
+   many terms plotted above the y-axis, most of the terms will have narrow
+   shapes, which are difficult to distinguish from one another.  Terms that are
+   perennial favourites are kept close to the x-axis, so that it's easier for
+   the eye to ignore them, and focus instead on the breakout terms that appear
+   at the edges.
+4. Colour each term by the total number of searchs for that term.  This means
+   every term has a slightly different colour, which makes it easier to
+   distinguish from other terms.  We also tried using colours that weren't
+   mapped to any value, but that looked garish and was confusing beause people
+   tried to interpret the meaning of the colours.
+5. Mark the beginning and end of weekends by vertical dotted lines.
+6. Label each term at its widest point.  The {ggrepel} package is used to avoid
+   overlapping labels.  The positions of the labels has to be calculated before
+   plotting, because I couldn't find a package that can label a stacked area
+   plot (which this is).
+7. Paste in a generic legend, which was made with Google Draw.
 
 ```{r streamgraph-ggplot-both-sides, fig.width = 960/72, fig.height = 640/72, echo = FALSE, message = FALSE}
 # Number of terms to track each day
