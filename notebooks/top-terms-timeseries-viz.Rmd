@@ -229,13 +229,16 @@ n_below_term <- function(term, dttm) {
     sum()
 }
 
+# Label the each term once, in the place where it is widest.
 annotations <-
   interpolations %>%
   group_by(term) %>%
-  top_n(1, n) %>%
+  top_n(1, n) %>% # Where the shape for the term is at its widest
   ungroup() %>%
-  mutate(n = n / 2 + map2_dbl(term, dttm, n_below_term),
-         n = scale * n) %>%
+  mutate(n = n / 2 + map2_dbl(term, dttm, n_below_term), # Half way between the
+         # bottom and the top of the stream for this term at this point
+         n = scale * n) %>% # `scale ` positions the annotation below the x-axis
+                            # if necessary
   select(term, dttm, n)
 
 weekend_breaks <- function(x) {
