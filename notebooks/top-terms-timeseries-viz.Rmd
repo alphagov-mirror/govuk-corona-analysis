@@ -750,7 +750,7 @@ search_terms_complete  %>%
 > * Today: "self-assessment", "sign-in", "tax"
 > * Yesterday: "self-assessment", "sign-in", "tax"
 > * Last week: "marriage tax", "sorn"
-> * last weekend: "alcohol", "extremely vulnerable"
+> * last weekend: "alcohol", "coronavirus extremely vulnerable"
 >
 > Most popular terms overall:
 >
