@@ -97,6 +97,7 @@ ccg_codes <-
 
 #' Dates of birth
 dobs <- dob(n)
+dobs <- str_remove_all(string = dobs, pattern = "-")
 
 #' NHS numbers
 nhs_numbers <- ch_integer(n = n, min = 1000000000, max = 9999999999)
@@ -201,7 +202,7 @@ master <-
     nhs_number = nhs_numbers_web,
     carry_supplies = r_sample(n, c("yes", "no")),
     reference_id = reference_ids(n),
-    full_dob = dobs,
+    full_dob = dob(n = n),
     session_id = uuid(n, drop_hyphens = TRUE),
     csrf_token = uuid(n, drop_hyphens = TRUE),
     phone_number_calls = phone_number_calls,
