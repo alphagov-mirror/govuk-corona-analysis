@@ -169,7 +169,7 @@ master <-
     Practice_NAME = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
     mobile = ch_phone_number(n, locale = "en_GB"),
-    patient_landline = ch_phone_number(n, locale = "en_GB"),
+    landline = ch_phone_number(n, locale = "en_GB"),
     oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     ccg = pull(sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE)),
 
@@ -263,7 +263,7 @@ nhs_column_names <-
     "Practice_NAME",
     "contact_telephone",
     "mobile",
-    "patient_landline",
+    "landline",
     "oslaua",
     "ccg",
     "Flag_Chemo/radiotherapy",
@@ -332,15 +332,9 @@ nhs_list <- sample_frac(master, nhs_perc + nhs_and_web_perc)
 web_list <- sample_frac(master, web_perc + nhs_and_web_perc)
 ivr_list <- sample_frac(nhs_list, ivr_perc)
 
-# nhs_list <- select_at(nhs_list, nhs_column_names)
-# web_list <- select_at(web_list, web_column_na
-
-mes)
+nhs_list <- select_at(nhs_list, nhs_column_names)
+web_list <- select_at(web_list, web_column_names)
 ivr_list <- select_at(ivr_list, ivr_column_names)
-
-transactions <- t$events
-names(transactions) <- t$session_id
-transactions <-
 
 ## 1. create row duplicates
 nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
@@ -383,7 +377,7 @@ ivr_list %>%
 ivr_list %>%
   anti_join(web_list, by = c("ivr_nhs_number" = "nhs_number")) %>%
   nrow()
-as(transactions, "transactions")
+
 # Web not IVR
 web_list %>%
   anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
