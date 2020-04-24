@@ -154,36 +154,35 @@ master <-
     #
     # NHS columns
     #
-    nhsnumber = nhs_numbers,
-    dateofbirth = dobs,
-    patientfirstname = first_names,
-    patientothername = other_names,
-    patientsurname = last_names,
-    patientaddress_line1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
-    patientaddress_line2 = map_chr(addresses, ~ .x$city()),
-    patientaddress_line3 = map_chr(addresses, ~ .x$street_name()),
-    patientaddress_line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
-    patientaddress_line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    patientaddress_postcode = postcodes,
-    gppracticecode = nhs_gp_practice_codes$code,
-    practice_name = nhs_gp_practice_codes$name,
+    Traced_NHSNUMBER = nhs_numbers,
+    DateOfBirth = dobs,
+    PatientFirstName = first_names,
+    PatientOtherName = other_names,
+    PatientSurname = last_names,
+    PatientAddress_Line1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
+    PatientAddress_Line2 = map_chr(addresses, ~ .x$city()),
+    PatientAddress_Line3 = map_chr(addresses, ~ .x$street_name()),
+    PatientAddress_Line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
+    PatientAddress_Line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
+    PatientAddress_Postcode = postcodes,
+    GPPractice_Code = nhs_gp_practice_codes$code,
+    Practice_NAME = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
     mobile = ch_phone_number(n, locale = "en_GB"),
-    patient_landline = ch_phone_number(n, locale = "en_GB"),
+    landline = ch_phone_number(n, locale = "en_GB"),
     oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     ccg = pull(sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE)),
 
-    flag_chemo_radiotherapy = flags$flag_chemo_radiotherapy,
-    flag_respiratory = flags$flag_respiratory,
-    flag_haematologicalcancers = flags$flag_haemotologicalcancers,
-    flag_pregnantwithcongentialheartdefect = flags$flag_pregnantwithcongentialheartdefect,
-    flag_transplant = flags$flag_transplant,
-    flag_rarediseases = flags$flag_rarediseases,
+    Flag_Chemo_Radiotherapy = flags$flag_chemo_radiotherapy,
+    Flag_Respiratory = flags$flag_respiratory,
+    Flag_HaematologicalCancers = flags$flag_haemotologicalcancers,
+    Flag_PregnantWithCongentialHeartDefect = flags$flag_pregnantwithcongentialheartdefect,
+    Flag_Transplant = flags$flag_transplant,
+    Flag_RareDiseases = flags$flag_rarediseases,
 
-    gender = pull(sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE)),
+    Gender = pull(sample_n(tbl = tibble(gender = c(0, 1, 2, 9, NA)), size = n, replace = TRUE)),
 
-    flag_pdssensitive = flags$flag_pdssensitive,
-    flag_pdsinformallydeceased = flags$flag_pdsinformallydeceased,
+    Flag_PDSInformallyDeceased = flags$flag_pdsinformallydeceased,
 
     oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     #
@@ -249,33 +248,32 @@ write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE, ro
 # Column names -----------------------------------------------------------------
 
 nhs_column_names <-
-  c("nhsnumber",
-    "dateofbirth",
-    "patientfirstname",
-    "patientothername",
-    "patientsurname",
-    "patientaddress_line1",
-    "patientaddress_line2",
-    "patientaddress_line3",
-    "patientaddress_line4",
-    "patientaddress_line5",
-    "patientaddress_postcode",
-    "gppracticecode",
-    "practice_name",
+  c("Traced_NHSNUMBER",
+    "DateOfBirth",
+    "PatientFirstName",
+    "PatientOtherName",
+    "PatientSurname",
+    "PatientAddress_Line1",
+    "PatientAddress_Line2",
+    "PatientAddress_Line3",
+    "PatientAddress_Line4",
+    "PatientAddress_Line5",
+    "PatientAddress_Postcode",
+    "GPPractice_Code",
+    "Practice_NAME",
     "contact_telephone",
     "mobile",
-    "patient_landline",
+    "landline",
     "oslaua",
     "ccg",
-    "flag_chemo_radiotherapy",
-    "flag_respiratory",
-    "flag_haematologicalcancers",
-    "flag_pregnantwithcongentialheartdefect",
-    "flag_transplant",
-    "flag_rarediseases",
-    "gender",
-    "flag_pdssensitive",
-    "flag_pdsinformallydeceased",
+    "Flag_Chemo/radiotherapy",
+    "Flag_Respiratory",
+    "Flag_HaematologicalCancers",
+    "Flag_PregnantWithCongentialHeartDefect",
+    "Flag_Transplant",
+    "Flag_RareDiseases",
+    "Gender",
+    "Flag_PDSInformallyDeceased",
     "oscty")
 
 web_column_names <-
@@ -338,8 +336,6 @@ nhs_list <- select_at(nhs_list, nhs_column_names)
 web_list <- select_at(web_list, web_column_names)
 ivr_list <- select_at(ivr_list, ivr_column_names)
 
-
-# Duplicating -------------------------------------------------------------
 ## 1. create row duplicates
 nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
 
