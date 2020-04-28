@@ -258,7 +258,7 @@ nhs_column_names <-
     "PatientAddress_Line3",
     "PatientAddress_Line4",
     "PatientAddress_Line5",
-    "PatientAddress_Postcode",
+    "PatientAddress_PostCode",
     "GPPractice_Code",
     "Practice_NAME",
     "contact_telephone",
@@ -354,18 +354,18 @@ write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE, row
 
 # NHS only
 nhs_list %>%
-  anti_join(web_list, by = c("nhsnumber" = "nhs_number")) %>%
-  anti_join(ivr_list, by = c("nhsnumber" = "ivr_nhs_number")) %>%
+  anti_join(web_list, by = c("Traced_NHSNUMBER" = "nhs_number")) %>%
+  anti_join(ivr_list, by = c("Traced_NHSNUMBER" = "ivr_nhs_number")) %>%
   nrow()
 
 # NHS and Web
 nhs_list %>%
-  inner_join(web_list, by = c("nhsnumber" = "nhs_number")) %>%
+  inner_join(web_list, by = c("Traced_NHSNUMBER" = "nhs_number")) %>%
   nrow()
 
 # Web only
 web_list %>%
-  anti_join(nhs_list, by = c("nhs_number" = "nhsnumber")) %>%
+  anti_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
   nrow()
 
 # IVR and Web
