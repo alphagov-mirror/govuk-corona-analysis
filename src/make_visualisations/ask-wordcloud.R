@@ -5,6 +5,8 @@ library(googledrive)                   # locate files on Google Drive
 library(googlesheets4)                 # import from Google Sheets
 library(tidytext)                      # stop_words
 library(udpipe)                        # parts of speech, lemmas
+library(topicmodels)                   # LDA topic modelling
+library(broom)                         # Get document topics from topicmodels
 library(wordcloud)                     # wordcloud
 library(ggalt)                         # better than default ggplot2
 library(igraph)                        # graphs
@@ -167,8 +169,8 @@ sentences <-
 #                        pattern = noun_phrase_coordinating_conjuntion ,
 #                        is_regex = TRUE),
 #              .progress = TRUE)
-# beep()
 # saveRDS(noun_phrases, noun_phrase_path)
+# beep()
 noun_phrases <- readRDS(noun_phrase_path)
 
 ## Verb phrases
@@ -270,3 +272,40 @@ ggraph(wordnetwork, layout = "fr") +
   labs(title = "Common pairs of words within a sentence",
        subtitle = "Nouns and adjectives only")
 ggsave(path(img_dir, "cooccurrence-graph.png"))
+
+# Topic modelling of noun phrases
+
+# Join the phrases back to the sentence IDs
+x <-
+  annotations %>%
+  distinct(doc_id, paragraph_id, sentence_id) %>%
+  arrange(doc_id, paragraph_id, sentence_id) %>%
+  # Repeat each sentence row as many times as there are phrases in it
+  .[rep(seq_len(nrow(.)), times = map_int(noun_phrases, nrow)), ] %>%
+  # Combine the sentence rows with the phrases rows
+  bind_cols(keyword = unlist(map(noun_phrases, pluck, "keyword"))) %>%
+  as_tibble() %>%
+  anti_join(stop_words, by = c("keyword" = "word"))
+
+## Build document/term/matrix
+dtm <- document_term_frequencies(x, document = "doc_id", term = "keyword")
+dtm <- document_term_matrix(x = dtm)
+dtm <- dtm_remove_lowfreq(dtm, minfreq = 5)
+
+## Build Topicic model. Eight topics worked well for Mat.
+m <- LDA(dtm, k = 8, method = "Gibbs",
+         control = list(seed = 2020-04-29)) #, nstart = 5, burnin = 2000, best = TRUE))
+beep()
+
+## Terms associated with each model
+predict(m, type = "terms", min_posterior = 0.01)
+
+## Typical questions in each topic
+tidy(m, matrix = "gamma") %>%
+  group_by(topic) %>%
+  top_n(20, wt = gamma) %>%
+  ungroup() %>%
+  mutate(id = parse_number(document)) %>%
+  inner_join(questions, by = "id") %>%
+  arrange(topic, desc(gamma)) %>%
+  write_tsv(here("data", "ask", "topics.tsv"))
