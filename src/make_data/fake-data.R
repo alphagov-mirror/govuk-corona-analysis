@@ -153,7 +153,13 @@ flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE),
          flag_transplant = V5,
          flag_rarediseases = V6,
          flag_pdssensitive = V7,
-         flag_pdsinformallydeceased = V8)
+         flag_pdsinformallydeceased = V8
+  ) %>%
+  # Resample flag_pdsinformallydeceased to have more 0s than 1s
+  mutate(flag_pdsinformallydeceased = sample(x = 0:1,
+                                             size = n,
+                                             replace = TRUE,
+                                             prob = c(0.75, 0.25)))
 
 # Master records ---------------------------------------------------------------
 master <-
