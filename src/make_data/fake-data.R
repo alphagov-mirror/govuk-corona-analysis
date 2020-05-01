@@ -356,8 +356,75 @@ nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = T
 nhs_list_dupe_changestatus <- nhs_list_dupe_real %>%
   mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", "0", "1")))
 
-## 3. rowbind to original list
-nhs_list <- rbind(nhs_list, nhs_list_dupe_real, nhs_list_dupe_changestatus)
+# More requirements of different types of duplicates and overlaps
+#
+# Web Data : Duplicate entries with same nhs number matching BOTH nhs dataset and ivr dataset.
+# Web Data : Duplicate entries with same nhs number matching ONLY nhs dataset
+# Web Data : Duplicate entries with no nhs number but fuzzy logic matching nhs data set (matching on first name, last name, dob, post code)
+# Web Data : Containing nhs number not in nhs set
+# IVR Data : Entries with nhs number in nhs data set where ivr_current_item_id = 17
+# IVR Data : Multiple entries with same nhs number in nhs data set where ivr_current_item_id = 17 and ivr_current_item_id != 17
+# IVR Data : Entries where data is only in nhs data set (and not available in Web data set)
+
+# Create web duplicates matching ivr and/or nhs
+web_nhs_ivr_duplicates <-
+  web_list %>%
+  semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
+  semi_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
+  sample_n(100)
+web_ivr_duplicates <-
+  web_list %>%
+  semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
+  anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
+  sample_n(100)
+
+# Create web duplicates but without NHS number
+web_duplicates_no_nhs_number <-
+  web_list %>%
+  semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
+  sample_n(100) %>%
+  mutate(nhs_number = NA_character_)
+
+# Ensure more IVR rows have ivr_current_item_id == 17
+ivr_list <-
+  ivr_list %>%
+  mutate(ivr_current_item_id  = if_else(runif(n()) < .05,
+                                        "17",
+                                        ivr_current_item_id))
+
+# Duplicate IVR and ensure some have ivr_current_item_id == 17 and some don't.
+ivr_duplicates <-
+  ivr_list %>%
+  sample_n(100) %>%
+  mutate(ivr_current_item_id  = if_else(runif(n()) < .5,
+                                        "17",
+                                        ivr_current_item_id))
+
+drop_ivr_web <-
+  web_list %>%
+  sample_n(100) %>%
+  anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number"))
+
+## 3. rowbind to original lists
+nhs_list <-
+  bind_rows(nhs_list,
+            nhs_list_dupe_real,
+            nhs_list_dupe_changestatus)
+
+web_list <-
+  bind_rows(
+    web_list,
+    web_nhs_ivr_duplicates,
+    web_ivr_duplicates,
+    web_duplicates_no_nhs_number
+  ) %>%
+anti_join(drop_ivr_web, by = "nhs_number")
+
+ivr_list <-
+  bind_rows(
+    ivr_list,
+    ivr_duplicates
+  )
 
 write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
