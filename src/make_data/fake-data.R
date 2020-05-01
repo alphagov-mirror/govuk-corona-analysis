@@ -362,36 +362,3 @@ nhs_list <- rbind(nhs_list, nhs_list_dupe_real, nhs_list_dupe_changestatus)
 write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE, row.names = FALSE)
-
-# Check overlaps between lists -------------------------------------------------
-
-# NHS only
-nhs_list %>%
-  anti_join(web_list, by = c("Traced_NHSNUMBER" = "nhs_number")) %>%
-  anti_join(ivr_list, by = c("Traced_NHSNUMBER" = "ivr_nhs_number")) %>%
-  nrow()
-
-# NHS and Web
-nhs_list %>%
-  inner_join(web_list, by = c("Traced_NHSNUMBER" = "nhs_number")) %>%
-  nrow()
-
-# Web only
-web_list %>%
-  anti_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
-  nrow()
-
-# IVR and Web
-ivr_list %>%
-  inner_join(web_list, by = c("ivr_nhs_number" = "nhs_number")) %>%
-  nrow()
-
-# IVR not Web
-ivr_list %>%
-  anti_join(web_list, by = c("ivr_nhs_number" = "nhs_number")) %>%
-  nrow()
-
-# Web not IVR
-web_list %>%
-  anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
-  nrow()
