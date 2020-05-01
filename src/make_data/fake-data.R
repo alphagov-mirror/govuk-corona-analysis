@@ -354,7 +354,7 @@ nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = T
 
 ## 2. create change of status 'duplicates'
 nhs_list_dupe_changestatus <- nhs_list_dupe_real %>%
-  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", 0, 1)))
+  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", "0", "1")))
 
 ## 3. rowbind to original list
 nhs_list <- rbind(nhs_list, nhs_list_dupe_real, nhs_list_dupe_changestatus)
