@@ -20,6 +20,11 @@
 # https://geoportal.statistics.gov.uk/datasets/clinical-commissioning-groups-april-2020-names-and-codes-in-england
 # and extract it into a folder called "data/ccg-codes"
 
+# Download the ONS Postcode Director from
+# http://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-may-2019
+# and extract the file ONSPD_MAY_2019_UK.txt (or whatever the date is) into a
+# folder called "data/postcodes".
+
 # Configuration ----------------------------------------------------------------
 
 # Total number of records to generate across all datasets
@@ -49,6 +54,7 @@ library(wakefield)
 library(ids)
 library(PostcodesioR)
 library(generator)
+library(vroom) # to read postcodes file without importing it into memory
 library(here)
 
 # Master records ---------------------------------------------------------------
@@ -57,16 +63,17 @@ n <- total_records
 m <- total_flags
 set.seed(2019-04-06)
 
-# random_postcodes <- function(n) {
-#   purrr::map_chr(seq_len(n), ~ random_postcode()$postcode)
-# }
-# random_postcodes(2)
-
 # Generate some random addresses and places
 addresses <- map(seq_len(n), ~ AddressProvider$new("en_GB"))
 places <- map_dfr(seq_len(n), ~ random_place())
-## generate real random UK postcodes
-postcodes <- map_chr(.x = seq_len(n), .f = ~ random_postcode()$postcode)
+
+## sample real UK postcodes from the ONS
+postcodes_path <- here("data/postcodes/Data/ONSPD_FEB_2020_UK.csv")
+postcodes <-
+  vroom(postcodes_path,
+        col_types = cols(.default = col_skip(),
+                         pcd = col_character()))$pcd %>%
+  sample(n)
 
 #' Create random reference IDs
 reference_ids <- function(n) {
@@ -197,7 +204,7 @@ master <-
     address_l1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
     address_l2 = map_chr(addresses, ~ .x$street_name()),
     county = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    postcode = map_chr(addresses, ~ .x$postcode()),
+    postcode = postcodes,
     nhs_number = nhs_numbers_web,
     carry_supplies = r_sample(n, c("yes", "no")),
     reference_id = reference_ids(n),
@@ -222,7 +229,7 @@ master <-
     # IVR columns
     #
     ivr_nhs_number = nhs_numbers,
-    ivr_postcode = map_chr(addresses, ~ .x$postcode()),
+    ivr_postcode = postcodes,
     ivr_dob = dob(n),
     ivr_customer_callling_number = ch_phone_number(n, locale = "en_GB"),
     ivr_current_item_id = ch_integer(n, min = 1, max = 99),
