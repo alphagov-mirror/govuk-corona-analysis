@@ -64,7 +64,7 @@ m <- total_flags
 set.seed(2019-04-06)
 
 # Generate some random addresses and places
-addresses <- map(seq_len(n), ~ AddressProvider$new("en_GB"))
+addresses <- AddressProvider$new()
 places <- map_dfr(seq_len(n), ~ random_place())
 
 ## sample real UK postcodes from the ONS
@@ -166,9 +166,9 @@ master <-
     PatientFirstName = first_names,
     PatientOtherName = other_names,
     PatientSurname = last_names,
-    PatientAddress_Line1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
-    PatientAddress_Line2 = map_chr(addresses, ~ .x$city()),
-    PatientAddress_Line3 = map_chr(addresses, ~ .x$street_name()),
+    PatientAddress_Line1 = str_replace_all(map_chr(seq_len(n), ~ addresses$street_address()), "\\n", ""),
+    PatientAddress_Line2 = map_chr(seq_len(n), ~ addresses$city()),
+    PatientAddress_Line3 = map_chr(seq_len(n), ~ addresses$street_name()),
     PatientAddress_Line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     PatientAddress_Line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     PatientAddress_PostCode = postcodes,
@@ -201,8 +201,8 @@ master <-
     last_name = last_names,
     city = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     # Use the same addresses as created above
-    address_l1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
-    address_l2 = map_chr(addresses, ~ .x$street_name()),
+    address_l1 = str_replace_all(map_chr(seq_len(n), ~ addresses$street_address()), "\\n", ""),
+    address_l2 = map_chr(seq_len(n), ~ addresses$street_name()),
     county = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     postcode = postcodes,
     nhs_number = nhs_numbers_web,
