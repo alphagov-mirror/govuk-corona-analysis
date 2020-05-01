@@ -28,23 +28,23 @@
 # Configuration ----------------------------------------------------------------
 
 # Total number of records to generate across all datasets
-total_records <- 1000
+total_records <- 5000
 
 # Total flags to have as columns in NHS list only
 total_flags <- 8
 
 # Percentage to appear in NHS list only
-nhs_perc <- .1
+nhs_perc <- .2
 
 # Percentage to appear in Web list only
-web_perc <- .1
+web_perc <- .2
 
 # Percentage to appear in both NHS and Web lists
 nhs_and_web_perc <- 1 - nhs_perc - web_perc
 
 # Percentage to appear in both NHS and IVR lists, drawn from the whole NHS list,
 # so including some that are/aren't in the Web list.
-ivr_perc <- .1
+ivr_perc <- .7
 
 # End of config ----------------------------------------------------------------
 
