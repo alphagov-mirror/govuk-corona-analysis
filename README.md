@@ -109,7 +109,13 @@ In order for `pre-commit` to run, action is needed to configure it on your syste
 
 - Run `pre-commit install -t pre-push` to set-up `pre-commit` to run when code is _pushed_
 
-  
+###  Note on installing packages for experimental notebook code
+
+Before running `pip install -r requirements-dev.txt`, you'll need to run the following on macos for dependencies:
+
+`brew install icu4c`
+
+`export PATH="/usr/local/opt/icu4c/bin:$PATH"`
 
 ###  Note on Jupyter notebook cleaning
 
