@@ -46,11 +46,15 @@ def detect_language(text):
     return "-"
 
 
+def compute_combinations(sentences, n):
+    return [chunks[i:i + n] for chunks in sentences for i in range(len(chunks) - (n - 1))]
+
+
 def keep_english_comments(full_df):
     """
-    
-    :param full_df: 
-    :return: 
+
+    :param full_df:
+    :return:
     """
     full_df['Q3_pii_removed'] = full_df['Q3_x'].progress_map(replace_pii_regex)
     full_df = full_df[(full_df.Q3_pii_removed.str.len() < 4000)]
