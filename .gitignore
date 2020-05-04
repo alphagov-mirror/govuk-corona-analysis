@@ -136,7 +136,10 @@ dmypy.json
 .idea
 
 # Ignore the `data` folder
-data/
+data/*
+
+# Track the `regex_for_theme.yaml` file
+!data/regex_for_theme.yaml
 
 # Ignore the `.secrets` file
 .secrets

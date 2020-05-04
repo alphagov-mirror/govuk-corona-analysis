@@ -1,0 +1,50 @@
+self-employ: self\s?(-|\s)\s?employ
+delivery: (deliver(y|(ies)|(ed)))|(slot)|(online shopping)
+vulnerable: vulnerable
+disabled: disab((led)|(ility))
+no-symptoms: no symptom
+covid-mention: ((corona)?(virus))|(covid)
+health-problem: ((health)|(heart) (problem)|(issue)|(condition)|(attack)|(disease)|(failure))|(
+  ms)|(copd)|(asthma)|((type)\s?[12])|(diabet)|(cancer)|(dementia)|(stroke)|(illness)|(a
+  type$)|(cough)|(leukaemia)
+symptoms: symptom
+at-risk: ((at)?(\s(very\s)?high)?\srisk)|(risk list)
+elderly: "((((a|'|\u2019)m( (in|at)( my)?)?)|aged) (over(-|\\s))?(([789][0-9]($|s|\\\
+  s))|(old)|(elderly)))|((over(-|\\s))?[789][0-9] y)"
+carer: (carer)|(care home)
+key-worker: (key\s?(\s|-)?\s?worker)|(nurse($|\s))|(essential worker)
+cannot-work: "can\\s?(no|'|\u2019)?t work"
+no-income: no ((work)|(income)|(money)|(wage)|(salar))
+laid-off: (furlough)|(fired)|(80 %)
+cannot-get-food: "(((can\\s?(no|'|\u2019)?t (get|buy|(shop for)))|((do not)?ha(ve|d)\
+  \ )(no|any|(not enough))?) (food|groceries))"
+cannot-get-med: "can\\s?(no|'|\u2019)?t get ((med)|(prescription))"
+get-med: (^med)|(prescription)
+travel: (travel(\s(advi[sc]e)|(status))?)|(flight)|(destination)
+no-information: (no\s)(\w*\s)?((info)|(clarification)|(advi[sc]e)|((contact )?((details)|(number)))|(answer)|(update)|(clarity)|(guid(e|(ance)))|(list)|(definition)|(address)|(link)|(form)|(contact)|(mention))
+information: (info)|(clarification)|(advi[sc]e)|((contact )?((details)|(number)))|(answer)|(update)|(clarity)|(guid(e|(ance)))|(list)|(definition)|(address)|(link)|(form)|(contact)
+no-correspondence: (no)\s((letter)|(t(e)?xt)|(message)|(e(\s|(\s?-\s?))?mail)|(alert)|(notice)|(communication))
+correspondence: (letter)|(t(e)?xt)|(message)|(e(\s|(\s?-\s?))?mail)|(alert)|(notice)
+no-one: (no\s?((family)|(one)))|(nothing)|(nobody)
+no-support: no ((support)|(aid)|(help)|(assistance)|(access)|(priority))
+support: (support)|(aid)|(help)|(assistance)|(access)|(priority)
+child: (child)|((^|\s)son)|(daughter)
+family: (parent)|(husband)|(wife)|(partner)|((mo|fa)ther)|(famil(y|(ies)))|(m[uo]m)|(dad)
+rules: (rule)|(restriction)|(measure)|(rights)
+uncertainty: ((no)|(a(ny)?)) ((way)|(option)|(choice)|(means)|(idea))
+work: work ((for)|(in)|(at)|(on))
+self-isolation: ((self\s|-)?isolat((ion)|(e)|(ing)))|(lock\s?(\s|-)?\s?down)
+license: (driv(ing|ers)\s)?licen[sc]e
+passport: passport
+pension: pension
+home-mention: (^|\s)h((ome)|(ouse))
+work-mention: (employ)|(work)|(job)|(business)|(company)
+benefit: (benefit)|(universal credit)|(eligible)|(esa)|(ssp)|(pip)|(allowance)
+school: (school)|(student)
+goods: (food)|(supplies)|(shopping)|(groceries)
+given-money: (money)|(grant)|(fund)|(relief)
+bills-to-pay: (bill)|(tax)|(mortgage)|(rent)|(loan)|(debt)|(fine)|(fee)|(insurance)
+scheme: scheme
+visa: (^|\s)visa($|\s)
+data: (data)|(cases)|(situation)|(stat(istic)?s?$)|(status)|(news)|(progress)
+death: dea((th)|d)
