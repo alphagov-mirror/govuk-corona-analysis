@@ -20,26 +20,31 @@
 # https://geoportal.statistics.gov.uk/datasets/clinical-commissioning-groups-april-2020-names-and-codes-in-england
 # and extract it into a folder called "data/ccg-codes"
 
+# Download the ONS Postcode Director from
+# http://geoportal.statistics.gov.uk/datasets/ons-postcode-directory-may-2019
+# and extract the file ONSPD_MAY_2019_UK.txt (or whatever the date is) into a
+# folder called "data/postcodes".
+
 # Configuration ----------------------------------------------------------------
 
 # Total number of records to generate across all datasets
-total_records <- 1000
+total_records <- 5000
 
 # Total flags to have as columns in NHS list only
 total_flags <- 8
 
 # Percentage to appear in NHS list only
-nhs_perc <- .1
+nhs_perc <- .2
 
 # Percentage to appear in Web list only
-web_perc <- .1
+web_perc <- .2
 
 # Percentage to appear in both NHS and Web lists
 nhs_and_web_perc <- 1 - nhs_perc - web_perc
 
 # Percentage to appear in both NHS and IVR lists, drawn from the whole NHS list,
 # so including some that are/aren't in the Web list.
-ivr_perc <- .1
+ivr_perc <- .7
 
 # End of config ----------------------------------------------------------------
 
@@ -49,6 +54,7 @@ library(wakefield)
 library(ids)
 library(PostcodesioR)
 library(generator)
+library(vroom) # to read postcodes file without importing it into memory
 library(here)
 
 # Master records ---------------------------------------------------------------
@@ -57,16 +63,17 @@ n <- total_records
 m <- total_flags
 set.seed(2019-04-06)
 
-# random_postcodes <- function(n) {
-#   purrr::map_chr(seq_len(n), ~ random_postcode()$postcode)
-# }
-# random_postcodes(2)
-
 # Generate some random addresses and places
-addresses <- map(seq_len(n), ~ AddressProvider$new("en_GB"))
+addresses <- AddressProvider$new()
 places <- map_dfr(seq_len(n), ~ random_place())
-## generate real random UK postcodes
-postcodes <- map_chr(.x = seq_len(n), .f = ~ random_postcode()$postcode)
+
+## sample real UK postcodes from the ONS
+postcodes_path <- here("data/postcodes/Data/ONSPD_FEB_2020_UK.csv")
+postcodes <-
+  vroom(postcodes_path,
+        col_types = cols(.default = col_skip(),
+                         pcd = col_character()))$pcd %>%
+  sample(n)
 
 #' Create random reference IDs
 reference_ids <- function(n) {
@@ -146,7 +153,13 @@ flags <- matrix(data = sample(x = 0:1, size = m * n, replace = TRUE),
          flag_transplant = V5,
          flag_rarediseases = V6,
          flag_pdssensitive = V7,
-         flag_pdsinformallydeceased = V8)
+         flag_pdsinformallydeceased = V8
+  ) %>%
+  # Resample flag_pdsinformallydeceased to have more 0s than 1s
+  mutate(flag_pdsinformallydeceased = sample(x = 0:1,
+                                             size = n,
+                                             replace = TRUE,
+                                             prob = c(0.75, 0.25)))
 
 # Master records ---------------------------------------------------------------
 master <-
@@ -159,12 +172,12 @@ master <-
     PatientFirstName = first_names,
     PatientOtherName = other_names,
     PatientSurname = last_names,
-    PatientAddress_Line1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
-    PatientAddress_Line2 = map_chr(addresses, ~ .x$city()),
-    PatientAddress_Line3 = map_chr(addresses, ~ .x$street_name()),
+    PatientAddress_Line1 = str_replace_all(map_chr(seq_len(n), ~ addresses$street_address()), "\\n", ""),
+    PatientAddress_Line2 = map_chr(seq_len(n), ~ addresses$city()),
+    PatientAddress_Line3 = map_chr(seq_len(n), ~ addresses$street_name()),
     PatientAddress_Line4 = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     PatientAddress_Line5 = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    PatientAddress_Postcode = postcodes,
+    PatientAddress_PostCode = postcodes,
     GPPractice_Code = nhs_gp_practice_codes$code,
     Practice_NAME = nhs_gp_practice_codes$name,
     contact_telephone = nhs_gp_practice_codes$telephone,
@@ -173,9 +186,9 @@ master <-
     oslaua = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
     ccg = pull(sample_n(tbl = ccg_codes[, "ccgcode"], size = n, replace = TRUE)),
 
-    Flag_Chemo_Radiotherapy = flags$flag_chemo_radiotherapy,
+    `Flag_Chemo/Radiotherapy` = flags$flag_chemo_radiotherapy,
     Flag_Respiratory = flags$flag_respiratory,
-    Flag_HaematologicalCancers = flags$flag_haemotologicalcancers,
+    Flag_HeamatologicalCancers = flags$flag_haemotologicalcancers,
     Flag_PregnantWithCongentialHeartDefect = flags$flag_pregnantwithcongentialheartdefect,
     Flag_Transplant = flags$flag_transplant,
     Flag_RareDiseases = flags$flag_rarediseases,
@@ -194,10 +207,10 @@ master <-
     last_name = last_names,
     city = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
     # Use the same addresses as created above
-    address_l1 = str_replace_all(map_chr(addresses, ~ .x$street_address()), "\\n", ""),
-    address_l2 = map_chr(addresses, ~ .x$street_name()),
+    address_l1 = str_replace_all(map_chr(seq_len(n), ~ addresses$street_address()), "\\n", ""),
+    address_l2 = map_chr(seq_len(n), ~ addresses$street_name()),
     county = map_chr(places$county_unitary, ~ ifelse(is.null(.x), NA_character_, .x)),
-    postcode = map_chr(addresses, ~ .x$postcode()),
+    postcode = postcodes,
     nhs_number = nhs_numbers_web,
     carry_supplies = r_sample(n, c("yes", "no")),
     reference_id = reference_ids(n),
@@ -222,7 +235,7 @@ master <-
     # IVR columns
     #
     ivr_nhs_number = nhs_numbers,
-    ivr_postcode = map_chr(addresses, ~ .x$postcode()),
+    ivr_postcode = postcodes,
     ivr_dob = dob(n),
     ivr_customer_callling_number = ch_phone_number(n, locale = "en_GB"),
     ivr_current_item_id = ch_integer(n, min = 1, max = 99),
@@ -245,140 +258,93 @@ glimpse(master)
 
 write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE, row.names = FALSE)
 
-# Column names -----------------------------------------------------------------
-
-nhs_column_names <-
-  c("Traced_NHSNUMBER",
-    "DateOfBirth",
-    "PatientFirstName",
-    "PatientOtherName",
-    "PatientSurname",
-    "PatientAddress_Line1",
-    "PatientAddress_Line2",
-    "PatientAddress_Line3",
-    "PatientAddress_Line4",
-    "PatientAddress_Line5",
-    "PatientAddress_Postcode",
-    "GPPractice_Code",
-    "Practice_NAME",
-    "contact_telephone",
-    "mobile",
-    "landline",
-    "oslaua",
-    "ccg",
-    "Flag_Chemo/radiotherapy",
-    "Flag_Respiratory",
-    "Flag_HaematologicalCancers",
-    "Flag_PregnantWithCongentialHeartDefect",
-    "Flag_Transplant",
-    "Flag_RareDiseases",
-    "Gender",
-    "Flag_PDSInformallyDeceased",
-    "oscty")
-
-web_column_names <-
-  c("live_in_england",
-    "first_name",
-    "middle_name",
-    "last_name",
-    "city",
-    "address_l1",
-    "address_l2",
-    "county",
-    "postcode",
-    "nhs_number",
-    "carry_supplies",
-    "reference_id",
-    "full_dob",
-    "session_id",
-    "csrf_token",
-    "phone_number_calls",
-    "phone_number_texts",
-    "contact",
-    "know_nhs_number",
-    "check_answers_seen",
-    "nhs_letter",
-    "basic_care_needs",
-    "dietary_requirements",
-    "medical_conditions",
-    "essential_supplies",
-    "updated_at",
-    "referenceid",
-    "unixtimestamp",
-    "created_at")
-
-ivr_column_names <-
-  c("ivr_nhs_number",
-    "ivr_postcode",
-    "ivr_dob",
-    "ivr_customer_callling_number",
-    "ivr_current_item_id",
-    "ivr_transfer",
-    "ivr_fallback_time",
-    "ivr_nhs_known",
-    "ivr_contact_id",
-    "ivr_preferred_phone_number",
-    "ivr_phone_number_calls",
-    "ivr_postal_code_verified",
-    "ivr_delivery_supplies",
-    "ivr_carry_supplies",
-    "ivr_have_help",
-    "ivr_call_timestamp",
-    "ivr_umet_needs")
-
 # Individual lists -------------------------------------------------------------
 
 nhs_list <- sample_frac(master, nhs_perc + nhs_and_web_perc)
 web_list <- sample_frac(master, web_perc + nhs_and_web_perc)
 ivr_list <- sample_frac(nhs_list, ivr_perc)
 
-nhs_list <- select_at(nhs_list, nhs_column_names)
-web_list <- select_at(web_list, web_column_names)
-ivr_list <- select_at(ivr_list, ivr_column_names)
+nhs_list <- select_at(nhs_list, Traced_NHSNUMBER:oscty)
+web_list <- select_at(web_list, live_in_england:created_at)
+ivr_list <- select_at(ivr_list, ivr_nhs_number:ivr_umet_needs)
 
 ## 1. create row duplicates
 nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
 
 ## 2. create change of status 'duplicates'
 nhs_list_dupe_changestatus <- nhs_list_dupe_real %>%
-  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", 0, 1)))
+  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", "0", "1")))
 
-## 3. rowbind to original list
-nhs_list <- rbind(nhs_list, nhs_list_dupe_real, nhs_list_dupe_changestatus)
+# More requirements of different types of duplicates and overlaps
+#
+# Web Data : Duplicate entries with same nhs number matching BOTH nhs dataset and ivr dataset.
+# Web Data : Duplicate entries with same nhs number matching ONLY nhs dataset
+# Web Data : Duplicate entries with no nhs number but fuzzy logic matching nhs data set (matching on first name, last name, dob, post code)
+# Web Data : Containing nhs number not in nhs set
+# IVR Data : Entries with nhs number in nhs data set where ivr_current_item_id = 17
+# IVR Data : Multiple entries with same nhs number in nhs data set where ivr_current_item_id = 17 and ivr_current_item_id != 17
+# IVR Data : Entries where data is only in nhs data set (and not available in Web data set)
+
+# Create web duplicates matching ivr and/or nhs
+web_nhs_ivr_duplicates <-
+  web_list %>%
+  semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
+  semi_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
+  sample_n(100)
+web_nhs_duplicates <-
+  web_list %>%
+  semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
+  anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
+  sample_n(100)
+
+# Create web duplicates but without NHS number
+web_duplicates_no_nhs_number <-
+  web_list %>%
+  semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
+  sample_n(100) %>%
+  mutate(nhs_number = NA_character_)
+
+# Ensure more IVR rows have ivr_current_item_id == 17
+ivr_list <-
+  ivr_list %>%
+  mutate(ivr_current_item_id  = if_else(runif(n()) < .05,
+                                        "17",
+                                        ivr_current_item_id))
+
+# Duplicate IVR and ensure some have ivr_current_item_id == 17 and some don't.
+ivr_duplicates <-
+  ivr_list %>%
+  sample_n(100) %>%
+  mutate(ivr_current_item_id  = if_else(runif(n()) < .5,
+                                        "17",
+                                        ivr_current_item_id))
+
+drop_ivr_web <-
+  web_list %>%
+  sample_n(100) %>%
+  anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number"))
+
+## 3. rowbind to original lists
+nhs_list <-
+  bind_rows(nhs_list,
+            nhs_list_dupe_real,
+            nhs_list_dupe_changestatus)
+
+web_list <-
+  bind_rows(
+    web_list,
+    web_nhs_ivr_duplicates,
+    web_nhs_duplicates,
+    web_duplicates_no_nhs_number
+  ) %>%
+anti_join(drop_ivr_web, by = "nhs_number")
+
+ivr_list <-
+  bind_rows(
+    ivr_list,
+    ivr_duplicates
+  )
 
 write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE, row.names = FALSE)
-
-# Check overlaps between lists -------------------------------------------------
-
-# NHS only
-nhs_list %>%
-  anti_join(web_list, by = c("nhsnumber" = "nhs_number")) %>%
-  anti_join(ivr_list, by = c("nhsnumber" = "ivr_nhs_number")) %>%
-  nrow()
-
-# NHS and Web
-nhs_list %>%
-  inner_join(web_list, by = c("nhsnumber" = "nhs_number")) %>%
-  nrow()
-
-# Web only
-web_list %>%
-  anti_join(nhs_list, by = c("nhs_number" = "nhsnumber")) %>%
-  nrow()
-
-# IVR and Web
-ivr_list %>%
-  inner_join(web_list, by = c("ivr_nhs_number" = "nhs_number")) %>%
-  nrow()
-
-# IVR not Web
-ivr_list %>%
-  anti_join(web_list, by = c("ivr_nhs_number" = "nhs_number")) %>%
-  nrow()
-
-# Web not IVR
-web_list %>%
-  anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
-  nrow()
