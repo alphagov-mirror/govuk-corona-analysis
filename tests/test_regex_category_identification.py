@@ -37,14 +37,14 @@ args_test_category_identification = [
 ]
 
 
-# Define test cases for the `test_theme_identification` unit test
+# Define test cases for the `TestThemeIdentification` test class
 args_test_theme_identification = [
     *args_test_category_identification,
     ("stats", None, "data"),
     ("stats", {}, "data")
 ]
 
-# Define test cases for the `test_group_verbs_identification` unit test
+# Define test cases for the `TestGroupVerbsIdentification` test class
 args_test_group_verbs_identification = [
     *args_test_category_identification,
     ("I need to pay bills", None, "pay-smthg"),
