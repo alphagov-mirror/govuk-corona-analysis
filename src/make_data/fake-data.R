@@ -258,96 +258,15 @@ glimpse(master)
 
 write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE, row.names = FALSE)
 
-# Column names -----------------------------------------------------------------
-
-nhs_column_names <-
-  c("Traced_NHSNUMBER",
-    "DateOfBirth",
-    "PatientFirstName",
-    "PatientOtherName",
-    "PatientSurname",
-    "PatientAddress_Line1",
-    "PatientAddress_Line2",
-    "PatientAddress_Line3",
-    "PatientAddress_Line4",
-    "PatientAddress_Line5",
-    "PatientAddress_PostCode",
-    "GPPractice_Code",
-    "Practice_NAME",
-    "contact_telephone",
-    "mobile",
-    "landline",
-    "oslaua",
-    "ccg",
-    "Flag_Chemo/Radiotherapy",
-    "Flag_Respiratory",
-    "Flag_HeamatologicalCancers",
-    "Flag_PregnantWithCongentialHeartDefect",
-    "Flag_Transplant",
-    "Flag_RareDiseases",
-    "Gender",
-    "Flag_PDSInformallyDeceased",
-    "oscty")
-
-web_column_names <-
-  c("live_in_england",
-    "first_name",
-    "middle_name",
-    "last_name",
-    "city",
-    "address_l1",
-    "address_l2",
-    "county",
-    "postcode",
-    "nhs_number",
-    "carry_supplies",
-    "reference_id",
-    "full_dob",
-    "session_id",
-    "csrf_token",
-    "phone_number_calls",
-    "phone_number_texts",
-    "contact",
-    "know_nhs_number",
-    "check_answers_seen",
-    "nhs_letter",
-    "basic_care_needs",
-    "dietary_requirements",
-    "medical_conditions",
-    "essential_supplies",
-    "updated_at",
-    "referenceid",
-    "unixtimestamp",
-    "created_at")
-
-ivr_column_names <-
-  c("ivr_nhs_number",
-    "ivr_postcode",
-    "ivr_dob",
-    "ivr_customer_callling_number",
-    "ivr_current_item_id",
-    "ivr_transfer",
-    "ivr_fallback_time",
-    "ivr_nhs_known",
-    "ivr_contact_id",
-    "ivr_preferred_phone_number",
-    "ivr_phone_number_calls",
-    "ivr_postal_code_verified",
-    "ivr_delivery_supplies",
-    "ivr_carry_supplies",
-    "ivr_have_help",
-    "ivr_call_timestamp",
-    "ivr_umet_needs")
-
 # Individual lists -------------------------------------------------------------
 
 nhs_list <- sample_frac(master, nhs_perc + nhs_and_web_perc)
 web_list <- sample_frac(master, web_perc + nhs_and_web_perc)
 ivr_list <- sample_frac(nhs_list, ivr_perc)
 
-nhs_list <- select_at(nhs_list, nhs_column_names)
-web_list <- select_at(web_list, web_column_names)
-ivr_list <- select_at(ivr_list, ivr_column_names)
+nhs_list <- select_at(nhs_list, Traced_NHSNUMBER:oscty)
+web_list <- select_at(web_list, live_in_england:created_at)
+ivr_list <- select_at(ivr_list, ivr_nhs_number:ivr_umet_needs)
 
 ## 1. create row duplicates
 nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
