@@ -1,15 +1,15 @@
 import re
 import sys
+from difflib import SequenceMatcher as SM
 
+import regex
 import spacy
 from nltk import sent_tokenize
+from nltk.util import ngrams
 # https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
 from polyglot.detect import Detector
 from tqdm import tqdm
-import regex
-from difflib import SequenceMatcher as SM
-from nltk.util import ngrams
-import codecs
+
 tqdm.pandas()
 
 nlp = spacy.load("en_core_web_sm")
@@ -74,11 +74,12 @@ def compute_combinations(sentences, n):
 
 def get_user_group(arg1, arg2):
     if re.search(r"((('|’|^(a)?)m)|(have been)|(feel))$", arg1):
-        return re.sub(r"^((the)|a)\s","", arg2)
+        return re.sub(r"^((the)|a)\s", "", arg2)
     return ""
 
+
 def resolve_function(x):
-    res = [get_user_group(*args) for theme,_,_,args in x if "verb" in theme[0]]
+    res = [get_user_group(*args) for theme, _, _, args in x if "verb" in theme[0]]
     return [r for r in res if r != ""]
 
 
@@ -109,4 +110,3 @@ def find_needle(needle, hay):
 
         return {needle: pattern}
     return {needle: None}
-
