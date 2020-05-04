@@ -1,15 +1,12 @@
 import os
-import pandas as pd
+import re
+import sys
+
 import spacy
 from nltk import sent_tokenize
-import sys
-from tqdm import tqdm
-import re
-
-from ast import literal_eval
-
 # https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
 from polyglot.detect import Detector
+from tqdm import tqdm
 
 tqdm.pandas()
 
