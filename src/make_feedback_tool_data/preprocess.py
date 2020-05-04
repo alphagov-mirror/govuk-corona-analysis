@@ -2,13 +2,13 @@ import os
 import pandas as pd
 import spacy
 from nltk import sent_tokenize
-
+import sys
 from tqdm import tqdm
 import re
 
 from ast import literal_eval
 
-## https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
+# https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
 from polyglot.detect import Detector
 
 tqdm.pandas()
@@ -38,8 +38,8 @@ def detect_language(text):
         try:
             langs = {language.confidence: language.code for language in Detector(text, quiet=True).languages}
             return langs[max(langs.keys())]
-        except:
-            return f"[ERROR] {text}"
+        except Exception:
+            return f"[ERROR] {text} {sys.exc_info()}"
     return "-"
 
 
@@ -52,31 +52,23 @@ def keep_english_comments(df):
     print(f"Number of unique languages: {len(lang_dist)}")
     print(f"English: {lang_dist['en'] / sum(lang_dist.values()):.2%}")
     print(f"-: {lang_dist['-'] / sum(lang_dist.values()):.2%}")
-    list(lang_dist.items())[0:10]
+    # list(lang_dist.items())[0:10]
 
     df['is_en'] = df['language'].isin(["en", "un", "-", "sco"])
 
-    df = df[df['is_en']]
-    df.shape
+    return df[df['is_en']]
 
 
 def save_intermediate_df(df):
     cache_pos_filename = os.path.join(DATA_DIR, "uis_20200401_20200409_lang_pos.csv")
 
-    if os.path.exists(cache_pos_filename):
+    df['pos_tag'] = df[['Q3_pii_removed', 'is_en']].progress_apply(lambda x: part_of_speech_tag(x[0]) if x[1] else [],
+                                                                   axis=1)
+    df['lemmas'] = df['pos_tag'].progress_map(lambda x: [token[2] for sent in x for token in sent])
 
-        df = pd.read_csv(cache_pos_filename)
-        df['pos_tag'] = df['pos_tag'].progress_map(literal_eval)
+    df['words'] = df['pos_tag'].progress_map(lambda x: [token[0] for sent in x for token in sent])
 
-    else:
-
-        df['pos_tag'] = df[['Q3_pii_removed', 'is_en']].progress_apply(lambda x: part_of_speech_tag(x[0])
-        if x[1] else [], axis=1)
-        df['lemmas'] = df['pos_tag'].progress_map(lambda x: [token[2] for sent in x for token in sent])
-
-        df['words'] = df['pos_tag'].progress_map(lambda x: [token[0] for sent in x for token in sent])
-
-        df.to_csv(cache_pos_filename, index=False)
+    df.to_csv(cache_pos_filename, index=False)
 
 
 if __name__ == "__main__":
