@@ -12,7 +12,7 @@ others-situation: "(has)|(((a|we)|'|\u2019|^)re($|\\s))"
 unclear-situation: "(had)|((i|'|\u2019|^)s($|\\s))|(was)"
 travel: travel
 living: (liv(e|(ing)))|(stay)
-do-smthng: (do)|(make)
+do-smthng: (^|\s)(do|make)($|\s)
 go-smwhr: go($|\s)
 give-smthng: (give)|(provide)
 help: (help)|(protect)|(support)

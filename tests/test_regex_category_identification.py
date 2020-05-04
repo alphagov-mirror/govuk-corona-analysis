@@ -32,6 +32,7 @@ args_test_category_identification = [
     ("foobar", example_dict_regex, "foo"),
     ("hello", example_dict_regex, "world"),
     ("foo", example_dict_regex, "bar"),
+    ("random", example_dict_regex, "unknown"),
     ("stats", DICT_THEMES, "data"),
     ("I need to pay bills", DICT_GROUP_VERBS, "pay-smthg")
 ]
@@ -41,14 +42,16 @@ args_test_category_identification = [
 args_test_theme_identification = [
     *args_test_category_identification,
     ("stats", None, "data"),
-    ("stats", {}, "data")
+    ("stats", {}, "data"),
+    ("random", None, "unknown")
 ]
 
 # Define test cases for the `TestGroupVerbsIdentification` test class
 args_test_group_verbs_identification = [
     *args_test_category_identification,
     ("I need to pay bills", None, "pay-smthg"),
-    ("I need to pay bills", {}, "pay-smthg")
+    ("I need to pay bills", {}, "pay-smthg"),
+    ("random", None, "unknown")
 ]
 
 
