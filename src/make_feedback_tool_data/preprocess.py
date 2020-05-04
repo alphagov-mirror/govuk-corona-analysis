@@ -8,6 +8,8 @@ from nltk import sent_tokenize
 # https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
 from polyglot.detect import Detector
 from tqdm import tqdm
+from src.make_feedback_tool_data.text_chunking import ChunkParser
+from src.make_feedback_tool_data.regex_category_identification import regex_for_theme, regex_group_verbs
 
 tqdm.pandas()
 
@@ -19,10 +21,20 @@ pii_regex = "|".join([f"\\[{p}\\]" for p in pii_filtered])
 
 
 def split_sentences(comment):
+    """
+
+    :param comment:
+    :return:
+    """
     return sent_tokenize(comment)
 
 
 def replace_pii_regex(text):
+    """
+
+    :param text:
+    :return:
+    """
     return re.sub(pii_regex, "", text)
 
 
@@ -37,6 +49,11 @@ def part_of_speech_tag(comment):
 
 
 def detect_language(text):
+    """
+
+    :param text:
+    :return:
+    """
     if text != "-":
         try:
             langs = {language.confidence: language.code for language in Detector(text, quiet=True).languages}
@@ -47,6 +64,12 @@ def detect_language(text):
 
 
 def compute_combinations(sentences, n):
+    """
+
+    :param sentences:
+    :param n:
+    :return:
+    """
     return [chunks[i:i + n] for chunks in sentences for i in range(len(chunks) - (n - 1))]
 
 
@@ -86,6 +109,32 @@ def save_intermediate_df(processed_df, cache_pos_filename):
     processed_df['words'] = processed_df['pos_tag'].progress_map(lambda x: [token[0] for sent in x for token in sent])
 
     processed_df.to_csv(cache_pos_filename, index=False)
+
+
+def extract_phrase_mentions(df, grammar_filename):
+    phrase_mentions = []
+
+    parser = ChunkParser(grammar_filename)
+
+    for vals in tqdm(df.pos_tag.values):
+        sents = parser.extract_phrase(vals, True)
+        phrase_mentions.append([])
+        for combo in compute_combinations(sents, 2):
+            key = (combo[0].label, combo[1].label)
+            arg1 = combo[0].text.lower()
+            arg2 = combo[1].text.lower()
+
+            if key in [('verb', 'noun'), ('verb', 'prep_noun'),
+                       ('verb', 'noun_verb'), ('noun', 'prep_noun'),
+                       ('prep_noun', 'noun'), ('prep_noun', 'prep_noun')]:
+                mention_theme = f"{regex_group_verbs(arg1)} - {regex_for_theme(arg2)}"
+
+                arg1 = re.sub(r"\(|\)|\[|\]|\+", "", arg1)
+                arg2 = re.sub(r"\(|\)|\[|\]|\+", "", arg2)
+                phrase = f"{arg1} {arg2}"
+                phrase_mentions[-1].append((key, phrase, mention_theme, (arg1, arg2)))
+
+    df['theme_mentions'] = phrase_mentions
 
 
 if __name__ == "__main__":
