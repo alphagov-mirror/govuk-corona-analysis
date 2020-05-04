@@ -291,7 +291,7 @@ web_nhs_ivr_duplicates <-
   semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
   semi_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
   sample_n(100)
-web_ivr_duplicates <-
+web_nhs_duplicates <-
   web_list %>%
   semi_join(nhs_list, by = c("nhs_number" = "Traced_NHSNUMBER")) %>%
   anti_join(ivr_list, by = c("nhs_number" = "ivr_nhs_number")) %>%
@@ -334,7 +334,7 @@ web_list <-
   bind_rows(
     web_list,
     web_nhs_ivr_duplicates,
-    web_ivr_duplicates,
+    web_nhs_duplicates,
     web_duplicates_no_nhs_number
   ) %>%
 anti_join(drop_ivr_web, by = "nhs_number")
