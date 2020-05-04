@@ -26,3 +26,4 @@ class Chunk:
 
     def important_lemma(self):
         return " ".join([l for _, pos, l in self.tokens if re.search(r"(NN)|(VB)|(JJ)|(CD)", pos)])
+
