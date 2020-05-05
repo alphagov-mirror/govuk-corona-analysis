@@ -4,7 +4,6 @@ from nltk.util import ngrams
 from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Tuple
 import re
-import regex
 import spacy
 import sys
 
@@ -200,7 +199,7 @@ class PreProcess:
             expression = f"({tokens[0]}).*({tokens[-1]})"
 
         # Find the full pattern in `max_sim_string` that contains `expression`
-        result = regex.search(expression, max_sim_string)
+        result = re.search(expression, max_sim_string)
 
         # If `result` is not None, return the found pattern, otherwise return None
         return {needle: result.group() if result else None}
