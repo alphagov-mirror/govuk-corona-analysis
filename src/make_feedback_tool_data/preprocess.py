@@ -44,6 +44,9 @@ class PreProcess:
     def replace_pii_regex(text: str) -> str:
         """Remove Personally Identifiable Information (PII) from a text string using regular expressions.
 
+        The regular expressions used can be found by importing the `PII_REGEX` variable from
+        `src.make_feedback_tool_data.preprocess`.
+
         :param text: Text string potentially containing PII.
         :return: `text` with PII removed.
 
