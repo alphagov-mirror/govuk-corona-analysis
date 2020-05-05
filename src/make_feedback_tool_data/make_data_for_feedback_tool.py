@@ -6,8 +6,7 @@ from tqdm import tqdm
 
 from src.make_feedback_tool_data.regex_category_identification import regex_for_theme, regex_group_verbs
 from src.make_feedback_tool_data.text_chunking import ChunkParser
-from src.make_feedback_tool_data.preprocess import replace_pii_regex, detect_language, part_of_speech_tag, \
-    compute_combinations, find_needle, resolve_function
+from src.make_feedback_tool_data.preprocess import PreProcess
 
 import numpy as np
 
@@ -19,10 +18,10 @@ def preproccess_filter_comment_text(full_df):
     :return:
     """
     logger.info("Removing non-english and lengthy comments...")
-    full_df['Q3_pii_removed'] = full_df['Q3_x'].progress_map(replace_pii_regex)
+    full_df['Q3_pii_removed'] = full_df['Q3_x'].progress_map(PreProcess.replace_pii_regex)
     full_df = full_df[(full_df.Q3_pii_removed.str.len() < 4000)]
 
-    full_df = full_df.assign(language=full_df['Q3_pii_removed'].progress_map(detect_language))
+    full_df = full_df.assign(language=full_df['Q3_pii_removed'].progress_map(PreProcess.detect_language))
 
     # lang_dist = full_df['language'].value_counts().to_dict()
     # print(f"Number of unique languages: {len(lang_dist)}")
@@ -66,7 +65,7 @@ def extract_phrase_mentions(df, grammar_filename):
     for vals in tqdm(df.pos_tag.values):
         sents = parser.extract_phrase(vals, True)
         phrase_mentions.append([])
-        for combo in compute_combinations(sents, 2):
+        for combo in PreProcess.compute_combinations(sents, 2):
             key = (combo[0].label, combo[1].label)
             arg1 = combo[0].text.lower()
             arg2 = combo[1].text.lower()
@@ -82,7 +81,7 @@ def extract_phrase_mentions(df, grammar_filename):
                 phrase_mentions[-1].append((key, phrase, mention_theme, (arg1, arg2)))
 
     df['theme_mentions'] = phrase_mentions
-    df['theme_mentions_user'] = df['theme_mentions'].map(resolve_function)
+    df['theme_mentions_user'] = df['theme_mentions'].map(PreProcess.resolve_function)
 
 
 def create_phrase_level_data(df, theme_col, phrase_type):
@@ -95,7 +94,7 @@ def create_phrase_level_data(df, theme_col, phrase_type):
     """
     logger.info(f"Creating phrase level data for {theme_col}...")
     df[f'{phrase_type}_dict'] = df[[theme_col, "Q3_x_edit"]][:]. \
-        progress_apply(lambda x: [find_needle(phrase, x[1].lower()) for _, phrase, _, _ in x[0]], axis=1)
+        progress_apply(lambda x: [PreProcess.find_needle(phrase, x[1].lower()) for _, phrase, _, _ in x[0]], axis=1)
     df[f'{phrase_type}_list'] = df[f'{phrase_type}_dict'].progress_map(lambda x: [value for phrase_dict in x for
                                                                                   value in phrase_dict.values() if
                                                                                   value is not None] if not isinstance(
@@ -133,7 +132,7 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
 
     logger.info("Part of speech tagging comments...")
     survey_data_df['pos_tag'] = survey_data_df[['Q3_pii_removed', 'is_en']].progress_apply(
-        lambda x: part_of_speech_tag(x[0]) if x[1] else [],
+        lambda x: PreProcess.part_of_speech_tag(x[0]) if x[1] else [],
         axis=1)
 
     extract_phrase_mentions(survey_data_df, grammar_filename)
