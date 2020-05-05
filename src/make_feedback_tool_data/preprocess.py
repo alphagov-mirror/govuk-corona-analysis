@@ -20,96 +20,178 @@ pii_regex = "|".join([f"\\[{p}\\]" for p in pii_filtered])
 
 
 class PreProcess:
+    """A class to hold static and class methods to pre-process text data."""
 
     @staticmethod
-    def split_sentences(comment):
+    def split_sentences(text):
+        """Split a multi-sentence text string into list of sentences.
+
+        :param text: Text string for splitting.
+        :return: List of individual sentences from `text`.
+
         """
-        Split multi-sentence comments into list of sentences.
-        :param comment: comment text string
-        :return: list of strings
-        """
-        return sent_tokenize(comment)
+        return sent_tokenize(text)
 
     @staticmethod
     def replace_pii_regex(text):
-        """
+        """Remove Personally Identifiable Information (PII) from a text string using regular expressions.
 
-        :param text:
-        :return:
+        :param text: Text string potentially containing PII.
+        :return: `text` with PII removed.
+
         """
         return re.sub(pii_regex, "", text)
 
     @classmethod
-    def part_of_speech_tag(cls, comment):
+    def part_of_speech_tag(cls, text):
+        """Perform part-of-speech (POS) tagging on a text string.
+
+        Leverages spaCy's pre-trained statistical models for English 'en_core_web_sm'.
+
+        :param text: A text string for POS tagging.
+        :return: A nested list of lists, where each nested list represents a sentence of `text`, and contains the POS
+            tags of each token in this sentence. Each POS tag is represented as a three-element tuple of the token,
+            its POS tag, and its lemma (base word of the token).
+
         """
-        Part of speech tag comments.
-        :param comment: a PII-tag removed text comment
-        :return: nested list of lists
-        """
-        sentences = cls.split_sentences(comment)
+
+        # Split `text` into a list of its sentences
+        sentences = cls.split_sentences(text)
+
+        # Return the POS tags for each token in the sentence
         return [[(token.text, token.tag_, token.lemma_) for token in nlp(sentence)] for sentence in sentences]
 
     @staticmethod
     def detect_language(text):
+        """Identify the language of a text string.
+
+        Uses the `polyglot` package. If multiple languages are identified, returns only the most confident/prevalent
+        language in `text`. Text strings of '-' are returns as is, with no language identification performed.
+
+        :param text: A text string of one or more languages for identification.
+        :return: A text string of the most confident/prevalent language detected in `text`, a '-' (if `text` is '-'),
+            or an error string if a language could not be identified.
+
         """
 
-        :param text:
-        :return:
-        """
+        # Check if `text` is '-'; if not, try and identify language, otherwise return '-'
         if text != "-":
+
+            # Detect the language of `text`, and return the most confident/prevalent language, if `text` contains
+            # multiple languages. If language detection fails, return an error string
             try:
                 langs = {language.confidence: language.code for language in Detector(text, quiet=True).languages}
                 return langs[max(langs.keys())]
             except Exception:
                 return f"[ERROR] {text} {sys.exc_info()}"
-        return "-"
+        else:
+            return "-"
 
     @staticmethod
     def compute_combinations(sentences, n):
-        """
+        """Create list chunks from a nested list of sentences using a moving window of a set size n.
 
-        :param sentences:
-        :param n:
-        :return:
+        See Example for further details.
+
+        :param sentences: A nested list of sentences for chunking.
+        :param n: The size of each resultant chunk.
+        :return: A list of chunks, where each chunk is a list of sentences.
+
+        :example:
+
+        >>> from src.make_feedback_tool_data.preprocess import PreProcess
+        >>> PreProcess.compute_combinations([["A", "B", "C", "D"]], 1)
+        [['A'], ['B'], ['C'], ['D']]
+
+        >>> PreProcess.compute_combinations([("A", "B", "C", "D")], 2)
+        [('A', 'B'), ('B', 'C'), ('C', 'D')]
+
+        >>> PreProcess.compute_combinations([("A", "B", "C", "D")], 3)
+        [('A', 'B', 'C'), ('B', 'C', 'D')]
+
         """
         return [chunks[i:i + n] for chunks in sentences for i in range(len(chunks) - (n - 1))]
 
     @staticmethod
-    def get_user_group(arg1, arg2):
-        if re.search(r"((('|’|^(a)?)m)|(have been)|(feel))$", arg1):
-            return re.sub(r"^((the)|a)\s", "", arg2)
-        return ""
+    def get_user_group(verb, text):
+        """Extract user group based on text, and its verb usage using regular expressions.
+
+        Verb must satisfy this regular expression: ((('|’|^(a)?)m)|(have been)|(feel))$
+
+        :param verb: Verb component in `text`
+        :param text: Text string containing `verb` and, potentially, a user group
+        :return: The user group from `text` if `verb` satisfies the regular expression, otherwise an empty string.
+
+        """
+        if re.search(r"((('|’|^(a)?)m)|(have been)|(feel))$", verb):
+            return re.sub(r"^((the)|a)\s", "", text)
+        else:
+            return ""
 
     @classmethod
-    def resolve_function(cls, x):
-        res = [cls.get_user_group(*args) for theme, _, _, args in x if "verb" in theme[0]]
+    def resolve_function(cls, phrase_mention):
+        """Extract the user group for a given text string within a phrase mention.
+
+        Uses the `PreProcess.get_user_group` static method to return the user group.
+
+        :param phrase_mention: A nested list of tuples that comprise components of a text string. Each tuple is four
+            elements long; a two-element tuple of the part-of-speech (POS) tags of text component, the text component
+            string, its theme as string, and a two-element tuple split of the text component according to the POS
+            tags. Note only the first and last (fourth) element of `phrase_mention` is used in this code.
+        :return: A list containing a potential user group, if the first POS tag is a verb, and the second text
+            component split contains a user group.
+
+        """
+
+        # Iterate over each component in `phrase_mention`, and extract possible user groups if the first POS tag is a
+        # verb
+        res = [cls.get_user_group(*str_split) for pos, _, _, str_split in phrase_mention if "verb" in pos[0]]
+
+        # Return non-empty string user groups
         return [r for r in res if r != ""]
 
     @staticmethod
     def find_needle(needle, hay):
+        """For a pattern identical or similar to a phrase `needle` that can be found in a text string `hay`.
+
+        :param needle: A phrase to find in `hay`.
+        :param hay: A text string that may contain `needle`, or a variant of it.
+        :return: A dictionary, where the key is `needle`, and the value is a pattern similar or identical to `needle`
+            that can be found in `hay`. If no pattern can be found, the value is None.
+
+        """
+
+        # Initialise some storage variables
         needle_length = len(needle.split())
         max_sim_val = 0
         max_sim_string = u""
-        #     print(needle)
+
+        # Split `hay` into n-grams, and search for a pattern that will match the n-grams
         for ngram in ngrams(hay.split(), needle_length + int(.65 * needle_length)):
+
+            # Concatenate the n-gram, and determine its similarity ratio to the overall phrase `needle`
             hay_ngram = u" ".join(ngram)
             similarity = SM(None, hay_ngram, needle).ratio()
+
+            # Store the similarity ratio, and the concatenated n-gram if the ratio is above `max_sim_val`
             if similarity > max_sim_val:
                 max_sim_val = similarity
                 max_sim_string = hay_ngram
 
+        # If no string is found, set it to `hay`
         if max_sim_string == "":
             max_sim_string = hay
 
+        # Split `needle` into individual tokens, and extract a regular expression that best matches `needle` to
+        # `hay`
         tokens = needle.split(" ")
         if len(tokens) == 1:
             expression = tokens[0]
         else:
             expression = f"({tokens[0]}).*({tokens[-1]})"
+
+        # Find the full pattern in `max_sim_string` that contains `expression`
         result = regex.search(expression, max_sim_string)
 
-        if result is not None:
-            pattern = result.group()
-
-            return {needle: pattern}
-        return {needle: None}
+        # If `result` is not None, return the found pattern, otherwise return None
+        return {needle: result.group() if result else None}
