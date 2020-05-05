@@ -18,7 +18,7 @@ def preproccess_filter_comment_text(full_df):
     :param full_df:
     :return:
     """
-    logger.info(f"Removing non-english and lengthy comments...")
+    logger.info("Removing non-english and lengthy comments...")
     full_df['Q3_pii_removed'] = full_df['Q3_x'].progress_map(replace_pii_regex)
     full_df = full_df[(full_df.Q3_pii_removed.str.len() < 4000)]
 
@@ -131,7 +131,7 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
     survey_data_df = pd.read_csv(survey_filename)
     survey_data_df = preproccess_filter_comment_text(survey_data_df)
 
-    logger.info(f"Part of speech tagging comments...")
+    logger.info("Part of speech tagging comments...")
     survey_data_df['pos_tag'] = survey_data_df[['Q3_pii_removed', 'is_en']].progress_apply(
         lambda x: part_of_speech_tag(x[0]) if x[1] else [],
         axis=1)
