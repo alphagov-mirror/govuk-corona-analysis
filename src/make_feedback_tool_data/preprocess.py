@@ -1,29 +1,31 @@
-import re
-import sys
 from difflib import SequenceMatcher as SM
-
-import regex
-import spacy
 from nltk import sent_tokenize
 from nltk.util import ngrams
 # https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
 from polyglot.detect import Detector
 from tqdm import tqdm
+from typing import Any, Dict, List, Optional, Tuple
+import re
+import regex
+import spacy
+import sys
 
 tqdm.pandas()
 
-nlp = spacy.load("en_core_web_sm")
+# Load spaCy's pre-trained statistical models for English 'en_core_web_sm'
+NLP = spacy.load("en_core_web_sm")
 
-pii_filtered = ["DATE_OF_BIRTH", "EMAIL_ADDRESS", "PASSPORT", "PERSON_NAME",
-                "PHONE_NUMBER", "STREET_ADDRESS", "UK_NATIONAL_INSURANCE_NUMBER", "UK_PASSPORT"]
-pii_regex = "|".join([f"\\[{p}\\]" for p in pii_filtered])
+# Define the regular expressions used for stripping out personally identifiable information (PII)
+PII_FILTERED = ["DATE_OF_BIRTH", "EMAIL_ADDRESS", "PASSPORT", "PERSON_NAME", "PHONE_NUMBER", "STREET_ADDRESS",
+                "UK_NATIONAL_INSURANCE_NUMBER", "UK_PASSPORT"]
+PII_REGEX = "|".join([rf"\[{p}\]" for p in PII_FILTERED])
 
 
 class PreProcess:
     """A class to hold static and class methods to pre-process text data."""
 
     @staticmethod
-    def split_sentences(text):
+    def split_sentences(text: str) -> List[str]:
         """Split a multi-sentence text string into list of sentences.
 
         :param text: Text string for splitting.
@@ -33,17 +35,17 @@ class PreProcess:
         return sent_tokenize(text)
 
     @staticmethod
-    def replace_pii_regex(text):
+    def replace_pii_regex(text: str) -> str:
         """Remove Personally Identifiable Information (PII) from a text string using regular expressions.
 
         :param text: Text string potentially containing PII.
         :return: `text` with PII removed.
 
         """
-        return re.sub(pii_regex, "", text)
+        return re.sub(PII_REGEX, "", text)
 
     @classmethod
-    def part_of_speech_tag(cls, text):
+    def part_of_speech_tag(cls, text: str) -> List[List[Tuple[str, str, str]]]:
         """Perform part-of-speech (POS) tagging on a text string.
 
         Leverages spaCy's pre-trained statistical models for English 'en_core_web_sm'.
@@ -59,10 +61,10 @@ class PreProcess:
         sentences = cls.split_sentences(text)
 
         # Return the POS tags for each token in the sentence
-        return [[(token.text, token.tag_, token.lemma_) for token in nlp(sentence)] for sentence in sentences]
+        return [[(token.text, token.tag_, token.lemma_) for token in NLP(sentence)] for sentence in sentences]
 
     @staticmethod
-    def detect_language(text):
+    def detect_language(text: str) -> str:
         """Identify the language of a text string.
 
         Uses the `polyglot` package. If multiple languages are identified, returns only the most confident/prevalent
@@ -88,12 +90,12 @@ class PreProcess:
             return "-"
 
     @staticmethod
-    def compute_combinations(sentences, n):
-        """Create list chunks from a nested list of sentences using a moving window of a set size n.
+    def compute_combinations(items: List[List[Any]], n: int) -> List[List[Any]]:
+        """Create list chunks from a nested list of items using a moving window of a set size n.
 
         See Example for further details.
 
-        :param sentences: A nested list of sentences for chunking.
+        :param items: A nested list of items for chunking.
         :param n: The size of each resultant chunk.
         :return: A list of chunks, where each chunk is a list of sentences.
 
@@ -110,10 +112,10 @@ class PreProcess:
         [('A', 'B', 'C'), ('B', 'C', 'D')]
 
         """
-        return [chunks[i:i + n] for chunks in sentences for i in range(len(chunks) - (n - 1))]
+        return [chunks[i:i + n] for chunks in items for i in range(len(chunks) - (n - 1))]
 
     @staticmethod
-    def get_user_group(verb, text):
+    def get_user_group(verb: str, text: str) -> str:
         """Extract user group based on text, and its verb usage using regular expressions.
 
         Verb must satisfy this regular expression: ((('|’|^(a)?)m)|(have been)|(feel))$
@@ -129,7 +131,7 @@ class PreProcess:
             return ""
 
     @classmethod
-    def resolve_function(cls, phrase_mention):
+    def resolve_function(cls, phrase_mention: List[Tuple[Tuple[str, str], str, str, Tuple[str, str]]]) -> List[str]:
         """Extract the user group for a given text string within a phrase mention.
 
         Uses the `PreProcess.get_user_group` static method to return the user group.
@@ -151,7 +153,7 @@ class PreProcess:
         return [r for r in res if r != ""]
 
     @staticmethod
-    def find_needle(needle, hay):
+    def find_needle(needle: str, hay: str) -> Dict[str, Optional[str]]:
         """For a pattern identical or similar to a phrase `needle` that can be found in a text string `hay`.
 
         :param needle: A phrase to find in `hay`.
