@@ -1,14 +1,21 @@
 from difflib import SequenceMatcher as SM
 from nltk import sent_tokenize
 from nltk.util import ngrams
-# https://markhneedham.com/blog/2017/11/28/python-polyglot-modulenotfounderror-no-module-named-icu/
-from polyglot.detect import Detector
 from tqdm import tqdm
 from typing import Any, Dict, List, Optional, Tuple
 import re
 import regex
 import spacy
 import sys
+
+# Try/except block to flag instructions for installing PyICU if the module has not been installed
+try:
+    from polyglot.detect import Detector
+except ImportError as e:
+    if str(e) == "No module named 'icu'":
+        raise ImportError(f"{str(e)}. Follow Python package instructions in `README.md` to install PyICU!")
+    else:
+        raise e
 
 tqdm.pandas()
 
