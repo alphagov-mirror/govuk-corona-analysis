@@ -1,23 +1,37 @@
-import logging.config
-
-import nltk.tree
 from nltk import RegexpParser
-from typing import List, Tuple, Union
-
 from src.make_feedback_tool_data.chunk import Chunk
+from typing import List, Optional, Tuple, Union
+import logging.config
+import nltk.tree
+import os
+
+# Define a file path to the regular expressions grammar file
+FIlE_GRAMMAR = os.path.join(os.getenv("DIR_SRC_MAKE_FEEDBACK_TOOL_DATA"), "grammar.txt")
 
 
 class ChunkParser:
 
-    def __init__(self, grammar_filename: str) -> None:
-        """
+    def __init__(self, grammar_filename: Optional[str] = None) -> None:
+        """Helper class to chunk part-of-speech tagged text using grammar regular expressions.
 
-        :param grammar_filename: A path string to file containing regular expression grammar patterns usable by the
-            `grammar` argument of the nltk.chunk.regexp.RegexpParser class. For each grammar type, each pattern
-            should be listed on a separate line,  and in descending order of priority (highest first).
+        The default grammar regular expressions file is defined by the `FILE_GRAMMAR` variable in
+        `src.make_feedback_tool_data.text_chunking`.
+        >>> from src.make_feedback_tool_data.text_chunking import FIlE_GRAMMAR
+        >>> FIlE_GRAMMAR
+        '.../govuk-corona-analysis/src/make_feedback_tool_data/grammar.txt'
+
+        :param grammar_filename: Default: None. A path string to file containing regular expression grammar patterns
+            usable by the `grammar` argument of the nltk.chunk.regexp.RegexpParser class. For each grammar type,
+            each pattern should be listed on a separate line, and in descending order of priority (highest first). If
+            None, it will use the default regular expression file.
 
         """
         self.logger = logging.getLogger(__name__)
+
+        # If `grammar_filename` is None, use the default file path
+        if not grammar_filename:
+            grammar_filename = FIlE_GRAMMAR
+
         # Load the regular expressions from `grammar_filename`
         self.grammar = self._load_grammar_from_file(grammar_filename)
 
@@ -86,7 +100,8 @@ class ChunkParser:
 
         :param chunks: A list of `src.make_feedback_tool_data.Chunk` objects.
         :return: A list of `src.make_feedback_tool_data.Chunk` objects, where adjacent chunks with the same grammar
-        in `chunks` are merged together, as long as the grammar is not 'prep_noun'. All other chunks are left unchanged.
+            in `chunks` are merged together, as long as the grammar is not 'prep_noun'. All other chunks are left
+            unchanged.
 
         """
 
@@ -117,8 +132,8 @@ class ChunkParser:
             -> List[List[Chunk]]:
         """Extract phrases for each grammar chunk of a part-of-speech (POS) tagged sentence.
 
-        :param sentences: A list of list of tuples, where the inner list represents sentences. The
-            three-element tuples in each sentence list are a token, its POS tag, and its lemma.
+        :param sentences: A list of list of tuples, where the inner list represents sentences. The three-element tuples
+            in each sentence list are a token, its POS tag, and its lemma.
         :param merge_inplace: Default: False. If True, adjacent, identically-labelled grammar `Chunk` objects in each
             sentence list of `sentences` are merged together, unless the are 'prep_noun'. See
             `ChunkParser._merge_adjacent_chunks` for further information. If False, no merging is performed.
