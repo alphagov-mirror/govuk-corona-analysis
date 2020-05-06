@@ -65,8 +65,6 @@ Project Organization
 
 --------
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
-
 ## Requirements
 
 To run the code in this GitHub repository, please make sure your system meets the following requirements:
@@ -190,3 +188,23 @@ some set of data. To do this, add the following comment at the top of the input 
 
 
 This will tell `pre-commit` not to strip the resulting output of this cell, allowing it to be committed.
+
+## Running tests
+
+Tests for this GitHub repository are written in [`pytest`](https://docs.pytest.org/en/latest/). To execute the tests,
+run the following command:
+
+```shell script
+pytest
+```
+
+### Test coverage
+
+To view the test coverage within the `src` folder as a HTML report, run the following commands:
+
+```shell script
+coverage run -m pytest
+coverage html
+```
+
+<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
