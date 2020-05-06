@@ -1,10 +1,12 @@
-from nltk import RegexpParser, tree
+from nltk import RegexpParser
 from src.make_feedback_tool_data.chunk import Chunk
+from typing import List, Tuple, Union
+import nltk.tree
 
 
 class ChunkParser:
 
-    def __init__(self, grammar_filename):
+    def __init__(self, grammar_filename: str) -> None:
         """
 
         :param grammar_filename: A path string to file containing regular expression grammar patterns usable by the
@@ -20,7 +22,7 @@ class ChunkParser:
         self.parser = RegexpParser(self.grammar)
 
     @staticmethod
-    def _load_grammar_from_file(grammar_filename):
+    def _load_grammar_from_file(grammar_filename: str) -> str:
         """Load grammar regular expression patterns from a file.
 
         :param grammar_filename: A path string to file containing regular expression grammar patterns usable by the
@@ -32,7 +34,7 @@ class ChunkParser:
         with open(grammar_filename, "r") as f:
             return "".join(f.readlines())
 
-    def _chunk_text(self, tagged):
+    def _chunk_text(self, tagged: Union[nltk.tree.Tree, List[Tuple[str, str, str]]]) -> List[Chunk]:
         """Chunk tokens with part-of-speech (POS) tags and lemmas according to grammar regular expressions.
 
         Uses the `parse` method from nltk.chunk.regexp.RegexpParser class for chunking.
@@ -53,7 +55,7 @@ class ChunkParser:
 
         # Iterate over `chunks`, and check if the iteration is a nltk.tree.Tree object
         for el in chunks:
-            if type(el) == tree.Tree:
+            if isinstance(el, nltk.tree.Tree):
 
                 # Crate a `Chunk` object from `el`, using the `index` counter to define the position of tokens within
                 # the original sentence
@@ -72,7 +74,7 @@ class ChunkParser:
         return segments
 
     @staticmethod
-    def _merge_adjacent_chunks(chunks):
+    def _merge_adjacent_chunks(chunks: List[Chunk]) -> List[Chunk]:
         """Merge adjacent grammar chunks together to reduce the number of chunks returned.
 
         Only adjacent chunks with the same label, where the label is not 'prep_noun' are merged together. Otherwise,
@@ -107,7 +109,8 @@ class ChunkParser:
 
         return merged
 
-    def extract_phrase(self, sentences, merge_inplace=False):
+    def extract_phrase(self, sentences: List[List[Tuple[str, str, str]]], merge_inplace: bool = False) \
+            -> List[List[Chunk]]:
         """Extract phrases for each grammar chunk of a part-of-speech (POS) tagged sentence.
 
         :param sentences: A list of list of tuples, where the inner list represents sentences. The
