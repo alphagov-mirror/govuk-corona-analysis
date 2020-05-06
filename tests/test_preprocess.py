@@ -15,7 +15,8 @@ args_method_returns_correctly_split_sentences = [
 args_method_returns_correctly_replace_pii_regex = [
     ("", ""),
     ("No PII here!", "No PII here!"),
-    *[(f"[{p}]", "") for p in PII_FILTERED]
+    *[(f"[{p}]", "") for p in PII_FILTERED],
+    ("Some text [{}] with PII".format("][".join(PII_FILTERED)), "Some text  with PII")
 ]
 
 # Test cases for the `test_method_returns_correctly` pytest on the `part_of_speech_tag` class method
@@ -65,16 +66,46 @@ args_method_returns_correctly_get_user_group = [
     ("is", "a random sentence", ""),  # 'This is a random sentence'
     ("am", "a key worker", "key worker"),  # 'I am a key worker'
     ("am", "the key worker", "key worker"),  # 'I am the key worker in our household'
-    ("'m", "a key worker", "key worker"),  # 'I am a key worker'
-    ("’m", "a key worker", "key worker"),  # 'I am a key worker'
+    ("'m", "a key worker", "key worker"),  # 'I'm a key worker'
+    ("’m", "a key worker", "key worker"),  # 'I’m a key worker'
     ("feel", "alone", "alone"),  # 'I feel alone'
     ("have been", "tested", "tested")  # 'I have been tested'
+]
+
+# Test cases for the `test_method_returns_correctly` pytest on the `resolve_function` class method. The test cases
+# leverage `args_method_returns_correctly_get_user_group` to build the required `phrase_mention` input argument of
+# the `resolve_function` class method. The first two sets of test cases check single phrase mentions where the first
+# POS tag is a verb or otherwise. The second two sets of test cases check multiple phrase mentions where the first POS
+# tag is a verb or otherwise. The third two sets of test cases check multiple (two) phrase mentions where the phrases
+# have alternate first POS tags (verb or otherwise), and vice versa
+args_method_returns_correctly_resolve_function = [
+    (*[([(("verb", "other"), " ".join(a[:1]), "theme", a[:-1])], [a[-1]] if a[-1] else []) for a in
+       args_method_returns_correctly_get_user_group]),
+    (*[([(("other", "other"), " ".join(a[:1]), "theme", a[:-1])], []) for a in
+       args_method_returns_correctly_get_user_group]),
+    ([(("verb", "other"), " ".join(a[:1]), "theme", a[:-1]) for a in args_method_returns_correctly_get_user_group],
+     [a[-1] for a in args_method_returns_correctly_get_user_group if a[-1]]),
+    ([(("other", "other"), " ".join(a[:1]), "theme", a[:-1]) for a in args_method_returns_correctly_get_user_group],
+     []),
+    ([(("verb", "other"), "is a random sentence", "theme", ("is", "a random sentence")),
+      (("other", "other"), "am a key worker", "theme", ("am", "a key worker"))], []),
+    ([(("other", "other"), "is a random sentence", "theme", ("is", "a random sentence")),
+      (("verb", "other"), "am a key worker", "theme", ("am", "a key worker"))], ["key worker"]),
+]
+
+# Test cases for the `test_method_returns_correctly` pytest on the `find_needle` static method
+args_method_returns_correctly_find_needle = [
+    ("", "", {"": ""}),
+    ("a random needle", "will not be found in this hay", {"a random needle": None}),
+    ("told register as a vulnerable person",
+     "told to register as a vulnerable person for delivery service for on line shopping",
+     {"told register as a vulnerable person": "told to register as a vulnerable person"})
 ]
 
 # Compile the test cases for the `test_method_returns_correctly` pytest alongside the methods for testing. For each
 # test case, the tuple comprises the `PreProcess` method (first element of the tuple), all the input arguments (at
 # least one element), and the expected argument (last element). This lets the `test_method_returns_correctly` pytest
-# hand methods with any number of input arguments
+# handle methods with any number of input arguments
 args_test_method_returns_correctly = [
     *[(PreProcess.split_sentences, a[:-1], a[-1]) for a in args_method_returns_correctly_split_sentences],
     *[(PreProcess.replace_pii_regex, a[:-1], a[-1]) for a in args_method_returns_correctly_replace_pii_regex],
@@ -82,6 +113,8 @@ args_test_method_returns_correctly = [
     *[(PreProcess.detect_language, a[:-1], a[-1]) for a in args_method_returns_correctly_detect_language],
     *[(PreProcess.compute_combinations, a[:-1], a[-1]) for a in args_method_returns_correctly_compute_combinations],
     *[(PreProcess.get_user_group, a[:-1], a[-1]) for a in args_method_returns_correctly_get_user_group],
+    *[(PreProcess.resolve_function, a[:-1], a[-1]) for a in args_method_returns_correctly_resolve_function],
+    *[(PreProcess.find_needle, a[:-1], a[-1]) for a in args_method_returns_correctly_find_needle]
 ]
 
 
@@ -126,3 +159,42 @@ def test_detect_language_returns_error_string(test_input):
         assert PreProcess.detect_language(test_input).startswith(f"[ERROR] {test_input} ")
     except Exception as e:
         pytest.fail(f"Raised exception {type(e)}:\n{str(e)}")
+
+
+# Test cases for the `test_resolve_function_calls_get_user_group_correctly` pytest; this is based off the
+# `args_method_returns_correctly_resolve_function` test cases
+args_resolve_function_calls_get_user_group_correctly = [a[0] for a in args_method_returns_correctly_resolve_function]
+
+
+@pytest.fixture
+def resource_resolve_function_calls_get_user_group(mocker):
+    """Patch the get_user_group static method used for the TestResolveFunctionCallsGetUserGroup test class."""
+    return mocker.patch.object(PreProcess, "get_user_group")
+
+
+@pytest.mark.parametrize("test_input", args_resolve_function_calls_get_user_group_correctly)
+class TestResolveFunctionCallsGetUserGroup:
+
+    def test_call_count_correct(self, resource_resolve_function_calls_get_user_group, test_input):
+        """Test the get_user_group static method is called the correct number of times."""
+
+        # Call the `resolve_function` class method
+        _ = PreProcess.resolve_function(test_input)
+
+        # Define the expected call count of the `get_user_group` static method
+        test_expected_call_count = sum(1 for a in test_input if a[0][0] == "verb")
+
+        # Assert the `get_user_group` static method is called the correct number of times
+        assert resource_resolve_function_calls_get_user_group.call_count == test_expected_call_count
+
+    def test_called_correctly(self, mocker, resource_resolve_function_calls_get_user_group, test_input):
+        """Test the the get_user_group static method is called with the correct arguments."""
+
+        # Call the `resolve_function` class method
+        _ = PreProcess.resolve_function(test_input)
+
+        # Define the expected input arguments to the `get_user_group` static method
+        test_expected_call_args = [mocker.call(*a[-1]) for a in test_input if a[0][0] == "verb"]
+
+        # Assert the `get_user_group` static method is called with the correct arguments
+        assert resource_resolve_function_calls_get_user_group.call_args_list == test_expected_call_args
