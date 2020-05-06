@@ -88,8 +88,7 @@ def extract_phrase_mentions(df, grammar_filename):
 
     df['themed_phrase_mentions'] = phrase_mentions
 
-    df['themed_phrases'] = df['themed_phrase_mentions'].map(lambda x: [phrase_text for _, phrase_text, _,
-                                                                                       _ in x])
+    df['themed_phrases'] = df['themed_phrase_mentions'].map(lambda x: [phrase_text for _, phrase_text, _, _ in x])
     df['themed_user_groups'] = df['themed_phrase_mentions'].map(PreProcess.resolve_function)
 
 
