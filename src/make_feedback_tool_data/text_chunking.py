@@ -15,7 +15,7 @@ class ChunkParser:
         :return:
         """
         with open(grammar_filename, "r") as f:
-            return f.readlines()
+            return "".join(f.readlines())
 
     def _chunk_text(self, tagged):
         """
@@ -65,5 +65,5 @@ class ChunkParser:
         for sentence in sentences:
             chunks.append(self._chunk_text(sentence))
         if merge_inplace:
-            return [self.merge_adjacent_chunks(chunk) for chunk in chunks]
+            return [self._merge_adjacent_chunks(chunk) for chunk in chunks]
         return chunks

@@ -1,3 +1,7 @@
+from src.make_feedback_tool_data.preprocess import PreProcess
+from src.make_feedback_tool_data.regex_category_identification import regex_for_theme, regex_group_verbs
+from src.make_feedback_tool_data.text_chunking import ChunkParser
+
 import logging.config
 import os
 
@@ -6,16 +10,12 @@ import pandas as pd
 import re
 from tqdm import tqdm
 
-from src.make_feedback_tool_data.preprocess import PreProcess
-from src.make_feedback_tool_data.regex_category_identification import regex_for_theme, regex_group_verbs
-from src.make_feedback_tool_data.text_chunking import ChunkParser
-
 nltk.download('punkt')
 
 import numpy as np
 
 
-def preproccess_filter_comment_text(full_df):
+def preproccess_filter_comment_text(full_df, length_threshold=4000):
     """
     Filter down survey feedback to only english and len < 4K char comments.
     :param full_df:
@@ -23,15 +23,14 @@ def preproccess_filter_comment_text(full_df):
     """
     logger.info("Removing non-english and lengthy comments...")
     full_df['Q3_pii_removed'] = full_df['Q3_x'].progress_map(PreProcess.replace_pii_regex)
-    full_df = full_df[(full_df.Q3_pii_removed.str.len() < 4000)]
+    full_df = full_df[(full_df.Q3_pii_removed.str.len() < length_threshold)]
 
     full_df = full_df.assign(language=full_df['Q3_pii_removed'].progress_map(PreProcess.detect_language))
 
-    # lang_dist = full_df['language'].value_counts().to_dict()
-    # print(f"Number of unique languages: {len(lang_dist)}")
-    # print(f"English: {lang_dist['en'] / sum(lang_dist.values()):.2%}")
-    # print(f"-: {lang_dist['-'] / sum(lang_dist.values()):.2%}")
-    # list(lang_dist.items())[0:10]
+    lang_dist = full_df['language'].value_counts().to_dict()
+    logger.debug(f"Number of unique languages: {len(lang_dist)}")
+    logger.debug(f"English: {lang_dist['en'] / sum(lang_dist.values()):.2%}")
+    logger.debug(f"-: {lang_dist['-'] / sum(lang_dist.values()):.2%}")
 
     full_df['is_en'] = full_df['language'].isin(["en", "un", "-", "sco"])
 
@@ -54,11 +53,14 @@ def save_intermediate_df(processed_df, cache_pos_filename):
 
 
 def extract_phrase_mentions(df, grammar_filename):
-    """
+    """For each POS-tagged sentence from comments in the survey data:
+    1. Detect and extract chunks as defined by grammar, merge adjacent chunks
+    2. Compute pair-wise combinations of chunks
+    3. If a combination type is in predefined list, append it to phrase_mentions list
 
-    :param df:
+    :param df: filtered, preprocessed survey dataframe
     :param grammar_filename:
-    :return:
+    :return: inplace define column containing applicable phrase mentions
     """
     phrase_mentions = []
 
@@ -66,7 +68,7 @@ def extract_phrase_mentions(df, grammar_filename):
 
     logger.info("Detecting and extracting phrase-level mentions...")
     for vals in tqdm(df.pos_tag.values):
-        sents = parser.extract_phrase(vals, True)
+        sents = parser.extract_phrase(vals, merge_inplace=True)
         phrase_mentions.append([])
         for combo in PreProcess.compute_combinations(sents, 2):
             key = (combo[0].label, combo[1].label)
@@ -89,7 +91,7 @@ def extract_phrase_mentions(df, grammar_filename):
 
 def create_phrase_level_data(df, theme_col, phrase_type):
     """
-    Create
+    Create column to be used by survey feedback explorer tool.
     :param df:
     :param theme_col:
     :param phrase_type:
@@ -140,6 +142,7 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
         axis=1)
     logger.info(f"Using grammar file: {grammar_filename}")
     extract_phrase_mentions(survey_data_df, grammar_filename)
+
     create_phrase_level_columns(survey_data_df)
 
     save_intermediate_df(survey_data_df, cache_pos_filename)
@@ -185,3 +188,9 @@ if __name__ == "__main__":
     output_data_filename = survey_data_filename.replace(".csv", "_phrases_user_groups.csv")
 
     create_dataset(survey_data_filename, chunk_grammar_filename, cache_pos_data_filename, output_data_filename)
+    # parser = ChunkParser(chunk_grammar_filename)
+    # comment = "This is an example sentence. This is another."
+    # tagged = PreProcess.part_of_speech_tag(comment)
+    # for sent in parser.extract_phrase(tagged, merge_inplace=True):
+    #     for chunk in sent:
+    #         print(chunk.text, chunk.label)
