@@ -26,13 +26,13 @@ def test_chunk_has_members():
     assert set(test_output) == set(args_chunk_member_names)
 
 
-# Define some inputs for the tests in the script; the original sentence is 'Signed up for advice due to the COVID 19
-# ongoing outbreak'
+# Define some inputs for the tests in the script; the original sentence is 'Signed up for advice due to the ongoing
+# COVID 19 outbreak'
 args_inputs = [
     ("verb", [("Signed", "VBN", "sign"), ("up", "RP", "up"), ("for", "IN", "for")], [0, 1, 2]),
     ("noun", [("advice", "NN", "advice")], [3]),
-    ("prep_noun", [("to", "IN", "to"), ("the", "DT", "the"), ('ongoing', 'JJ', 'ongoing'), ("COVID", "NNP", "COVID"),
-                   ("19", "CD", "19"), ("outbreak", "NN", "outbreak")],
+    ("prep_noun", [('due', 'IN', 'due'), ("to", "IN", "to"), ("the", "DT", "the"), ('ongoing', 'JJ', 'ongoing'),
+                   ("COVID", "NNP", "COVID"), ("19", "CD", "19"), ("outbreak", "NN", "outbreak")],
      [5, 6, 7, 8, 9])
 ]
 
@@ -55,7 +55,7 @@ class TestChunkInitialisation:
 
     @pytest.mark.parametrize("test_attribute", args_init_call_members)
     def test_calls_attributes(self, mocker, test_input_label, test_input_tokens, test_input_indices, test_attribute):
-        """Test that Chunk, when initialised, calls various object members."""
+        """Test that Chunk, when initialised, calls various attributes."""
 
         # Patch the attribute of the `Chunk` class object
         patch_member = mocker.patch.object(Chunk, test_attribute)
@@ -68,10 +68,10 @@ class TestChunkInitialisation:
 
 
 # Define the expected `text` attribute output for `args_input`
-test_expected_text = ["Signed up for", "advice", "to the ongoing COVID 19 outbreak"]
+test_expected_text = ["Signed up for", "advice", "due to the ongoing COVID 19 outbreak"]
 
 # Define the expected `lemma` attribute output for `args_input`
-test_expected_lemma = ["sign up for", "advice", "to the ongoing COVID 19 outbreak"]
+test_expected_lemma = ["sign up for", "advice", "due to the ongoing COVID 19 outbreak"]
 
 # Define the expected `tagable_words` instance method output for `args_input`
 test_expected_tagable_words = [[("Signed", "VBN")], [("advice", "NN")], [("COVID", "NNP"), ("outbreak", "NN")]]
@@ -88,7 +88,7 @@ test_member_object_expected = zip(args_chunk_member_names,
                                    test_expected_important_word, test_expected_important_lemma])
 
 # Populate the test cases for the `test_member_returns_correctly` pytest - this will be a five-element tuple. The
-# first element is the member of the `Chunk` class, the second- to fourth-element will be the input arguments (label,
+# first element is the member of the `Chunk` class, the second- to fourth-elements will be the input arguments (label,
 # tokens, indices), and the last element will be the expected output from this member
 args_method_returns_correctly = [(m, *i, e) for m, ev in test_member_object_expected for i, e in zip(args_inputs, ev)]
 
