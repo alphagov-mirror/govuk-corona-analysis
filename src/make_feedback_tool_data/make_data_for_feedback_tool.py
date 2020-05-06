@@ -62,11 +62,12 @@ def extract_phrase_mentions(df, grammar_filename):
     :param grammar_filename:
     :return: inplace define column containing applicable phrase mentions
     """
+
+    logger.info("Detecting and extracting phrase-level mentions...")
     phrase_mentions = []
 
     parser = ChunkParser(grammar_filename)
 
-    logger.info("Detecting and extracting phrase-level mentions...")
     for vals in tqdm(df.pos_tag.values):
         sents = parser.extract_phrase(vals, merge_inplace=True)
         phrase_mentions.append([])
@@ -80,8 +81,8 @@ def extract_phrase_mentions(df, grammar_filename):
                        ('prep_noun', 'noun'), ('prep_noun', 'prep_noun')]:
                 mention_theme = f"{regex_group_verbs(arg1)} - {regex_for_theme(arg2)}"
 
-                arg1 = re.sub(r"[()\[\]+]", "", arg1)
-                arg2 = re.sub(r"[()\[\]+]", "", arg2)
+                arg1 = re.sub(r"[()\[\]+?]", "", arg1)
+                arg2 = re.sub(r"[()\[\]+?]", "", arg2)
                 phrase = f"{arg1} {arg2}"
                 phrase_mentions[-1].append((key, phrase, mention_theme, (arg1, arg2)))
 
@@ -98,7 +99,7 @@ def create_phrase_level_data(df, theme_col, phrase_type):
     :return:
     """
     logger.info(f"Creating phrase level data for {theme_col}...")
-    df[f'{phrase_type}_dict'] = df[[theme_col, "Q3_x_edit"]][:]. \
+    df[f'{phrase_type}_dict'] = df[[theme_col, "Q3_x_edit"]]. \
         progress_apply(lambda x: [PreProcess.find_needle(phrase, x[1].lower()) for _, phrase, _, _ in x[0]], axis=1)
     df[f'{phrase_type}_list'] = df[f'{phrase_type}_dict'].progress_map(lambda x: [value for phrase_dict in x for
                                                                                   value in phrase_dict.values() if
@@ -116,7 +117,7 @@ def create_phrase_level_columns(df):
     """
     logger.info("Creating phrase level columns...")
     df["Q3_x_edit"] = df["Q3_x"].replace(np.nan, '', regex=True)
-    df["Q3_x_edit"] = df["Q3_x_edit"].progress_map(lambda x: ' '.join(re.sub(r"[()\[\]+]", "", x).split()))
+    df["Q3_x_edit"] = df["Q3_x_edit"].progress_map(lambda x: ' '.join(re.sub(r"[()\[\]+?]", "", x).split()))
 
     create_phrase_level_data(df, "theme_mentions", "phrases")
     create_phrase_level_data(df, "theme_mentions_user", "user_phrases")
@@ -134,6 +135,17 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
 
     logger.info(f"Reading survey file: {survey_filename}")
     survey_data_df = pd.read_csv(survey_filename)
+
+    loaded_number_rows = survey_data_df.shape[0]
+    logger.info(f"Number of rows: {loaded_number_rows}")
+    logger.info(f"Unique clientIds: {survey_data_df.intents_clientID.nunique()}")
+    logger.info(f"Unique primary key: {survey_data_df.primary_key.nunique()}")
+    logger.info(f"Unique session_ids: {survey_data_df.session_id.nunique()}")
+    logger.info("Dropping duplicates...")
+    survey_data_df.drop_duplicates("primary_key", inplace=True)
+    survey_data_df.reset_index(inplace=True, drop=True)
+    logger.info(f"Dropped {loaded_number_rows - survey_data_df.shape[0]} rows.")
+
     survey_data_df = preproccess_filter_comment_text(survey_data_df)
 
     logger.info("Part of speech tagging comments...")
@@ -143,9 +155,9 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
     logger.info(f"Using grammar file: {grammar_filename}")
     extract_phrase_mentions(survey_data_df, grammar_filename)
 
-    create_phrase_level_columns(survey_data_df)
-
     save_intermediate_df(survey_data_df, cache_pos_filename)
+
+    create_phrase_level_columns(survey_data_df)
 
     columns_to_keep = ['primary_key', 'intents_clientID', 'visitId', 'fullVisitorId',
                        'hits_pagePath', 'Started', 'Ended', 'Q1_x', 'Q2_x', 'Q3_x_edit', 'Q4_x',
