@@ -10,9 +10,9 @@ import pandas as pd
 import re
 from tqdm import tqdm
 
-nltk.download('punkt')
-
 import numpy as np
+
+nltk.download('punkt')
 
 
 def preproccess_filter_comment_text(full_df, length_threshold=4000):
