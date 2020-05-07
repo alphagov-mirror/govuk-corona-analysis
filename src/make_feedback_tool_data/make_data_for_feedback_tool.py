@@ -68,7 +68,7 @@ def extract_phrase_mentions(df, grammar_filename):
 
     parser = ChunkParser(grammar_filename)
 
-    for vals in tqdm(df.pos_tag.values):
+    for comment, vals in tqdm(df[['Q3_x_edit', 'pos_tag']].values):
         sents = parser.extract_phrase(vals, merge_inplace=True)
         phrase_mentions.append([])
         for combo in PreProcess.compute_combinations(sents, 2):
@@ -79,36 +79,23 @@ def extract_phrase_mentions(df, grammar_filename):
             if key in [('verb', 'noun'), ('verb', 'prep_noun'),
                        ('verb', 'noun_verb'), ('noun', 'prep_noun'),
                        ('prep_noun', 'noun'), ('prep_noun', 'prep_noun')]:
-                mention_theme = f"{regex_group_verbs(arg1)} - {regex_for_theme(arg2)}"
+                generic_phrase = (regex_group_verbs(arg1), regex_for_theme(arg2))
 
-                arg1 = re.sub(r"[()\[\]+?]", "", arg1)
-                arg2 = re.sub(r"[()\[\]+?]", "", arg2)
-                phrase = f"{arg1} {arg2}"
-                phrase_mentions[-1].append((key, phrase, mention_theme, (arg1, arg2)))
+                arg1 = re.sub(r"[()\[\]+*]", "", arg1)
+                arg2 = re.sub(r"[()\[\]+*]", "", arg2)
+                phrase = (arg1, arg2)
+                exact_phrase = PreProcess.find_needle(" ".join(phrase), comment.lower())
+
+                if exact_phrase is not None:
+                    exact_verb = PreProcess.find_needle(phrase[0], exact_phrase)
+                    if exact_verb is not None:
+                        exact_phrase = (exact_verb, re.sub(exact_verb, "", exact_phrase).strip())
+                        phrase_mentions[-1].append({"chunked_phrase": phrase,
+                                                    "exact_phrase": exact_phrase,
+                                                    "generic_phrase": generic_phrase,
+                                                    "key": key})
 
     df['themed_phrase_mentions'] = phrase_mentions
-
-    df['themed_phrases'] = df['themed_phrase_mentions'].map(lambda x: [phrase_text for _, phrase_text, _, _ in x])
-    df['themed_user_groups'] = df['themed_phrase_mentions'].map(PreProcess.resolve_function)
-
-
-def create_phrase_level_data(df, theme_col, phrase_type):
-    """
-    Create column to be used by survey feedback explorer tool.
-    :param df:
-    :param theme_col:
-    :param phrase_type:
-    :return:
-    """
-    logger.info(f"Creating phrase level data for {theme_col}...")
-    df[f'{phrase_type}_dict'] = df[[theme_col, "Q3_x_edit"]]. \
-        progress_apply(lambda x: [PreProcess.find_needle(phrase, x[1].lower()) for phrase in x[0]], axis=1)
-    df[f'{phrase_type}_list'] = df[f'{phrase_type}_dict'].progress_map(lambda x: [value for phrase_dict in x for
-                                                                                  value in phrase_dict.values() if
-                                                                                  value is not None] if not isinstance(
-        x, float) else [])
-    logger.info(f"Creating {phrase_type} data for feedback tool...")
-    df[f"{phrase_type}"] = df[f'{phrase_type}_list'].progress_map(lambda x: ", ".join(x))
 
 
 def create_phrase_level_columns(df):
@@ -117,12 +104,16 @@ def create_phrase_level_columns(df):
     :param df:
     :return:
     """
-    logger.info("Creating phrase level columns...")
-    df["Q3_x_edit"] = df["Q3_x"].replace(np.nan, '', regex=True)
-    df["Q3_x_edit"] = df["Q3_x_edit"].progress_map(lambda x: ' '.join(re.sub(r"[()\[\]+?]", "", x).split()))
+    df['exact_phrases'] = df['themed_phrase_mentions'].progress_map(
+        lambda x: "\n".join([", ".join(item['exact_phrase'])
+                             for item in x
+                             if item['key'][0] == "verb"]))
 
-    create_phrase_level_data(df, "themed_phrases", "phrases")
-    create_phrase_level_data(df, "themed_user_groups", "user_phrases")
+    df['generic_phrases'] = df['themed_phrase_mentions'].progress_map(
+        lambda x: "\n".join([", ".join(item['generic_phrase'])
+                             for item in x
+                             if item['key'][0] == "verb"]))
+    # df['user_groups'] = df['theme_mentions'].progress_map(lambda x: get_user_group(x))
 
 
 def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output_filename):
@@ -146,6 +137,11 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
     survey_data_df['pos_tag'] = survey_data_df[['Q3_pii_removed', 'is_en']].progress_apply(
         lambda x: PreProcess.part_of_speech_tag(x[0]) if x[1] else [],
         axis=1)
+
+    logger.info("Pre-processing feedback text for matching...")
+    survey_data_df["Q3_x_edit"] = survey_data_df["Q3_x"].replace(np.nan, '', regex=True)
+    survey_data_df["Q3_x_edit"] = survey_data_df["Q3_x_edit"].progress_map(lambda x: ' '.join(re.sub(r"[()\[\]+*]", "",
+                                                                                                     x).split()))
 
     extract_phrase_mentions(survey_data_df, grammar_filename)
 
@@ -174,7 +170,7 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
                        'full_url_in_session_flag', 'UserID', 'UserNo', 'Name', 'Email',
                        'IP Address', 'Unique ID', 'Tracking Link', 'clientID', 'Page Path',
                        'Q1_y', 'Q2_y', 'Q3_y', 'Q4_y', 'Q5_y', 'Q6_y', 'Q7_y', 'Q8_y',
-                       'Started_Date', 'Ended_Date', 'Started_Date_sub_12h', 'phrases', 'user_phrases']
+                       'Started_Date', 'Ended_Date', 'Started_Date_sub_12h', 'exact_phrases', 'generic_phrases']
 
     survey_data_df.rename(columns={'Q3_x_edit': 'Q3_x'}, inplace=True)
     survey_data_df[columns_to_keep].to_csv(os.path.join(DATA_DIR, output_filename), index=False)
