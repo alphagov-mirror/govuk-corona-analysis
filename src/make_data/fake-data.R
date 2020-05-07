@@ -198,6 +198,15 @@ master <-
     Flag_PDSInformallyDeceased = flags$flag_pdsinformallydeceased,
 
     oscty = map_chr(places$name_1, ~ ifelse(is.null(.x), NA_character_, .x)),
+    Data_Source = sample(c("COG_TRUST_UPDATE", "GP WEEKLY SPL", "HES", "Initial"),
+                         size = n,
+                         replace = TRUE,
+                         prob = c(340814, 637709, 2197, 1220468)), # Counts from real data
+    InceptionDate = sample(seq.Date(from = as.Date("2020-04-12"),
+                                    to = Sys.Date(),
+                                    by = "1 day"),
+                           replace = TRUE,
+                           size = n),
     #
     # Web columns
     #
@@ -264,9 +273,9 @@ nhs_list <- sample_frac(master, nhs_perc + nhs_and_web_perc)
 web_list <- sample_frac(master, web_perc + nhs_and_web_perc)
 ivr_list <- sample_frac(nhs_list, ivr_perc)
 
-nhs_list <- select_at(nhs_list, Traced_NHSNUMBER:oscty)
-web_list <- select_at(web_list, live_in_england:created_at)
-ivr_list <- select_at(ivr_list, ivr_nhs_number:ivr_umet_needs)
+nhs_list <- select_at(nhs_list, vars(Traced_NHSNUMBER:InceptionDate))
+web_list <- select_at(web_list, vars(live_in_england:created_at))
+ivr_list <- select_at(ivr_list, vars(ivr_nhs_number:ivr_umet_needs))
 
 ## 1. create row duplicates
 nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
