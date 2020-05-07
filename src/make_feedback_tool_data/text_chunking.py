@@ -2,6 +2,7 @@ from nltk import RegexpParser, tree
 from src.make_feedback_tool_data.chunk import Chunk
 import logging.config
 
+
 class ChunkParser:
 
     def __init__(self, grammar_filename):
