@@ -531,3 +531,17 @@ class TestExtractPhraseCallsMethods:
             assert resource__merge_adjacent_chunks_patch.call_args_list == test_expected
         else:
             assert not resource__merge_adjacent_chunks_patch.called
+
+    def test_returns_method_output(self, resource__chunk_text_patch, resource__merge_adjacent_chunks_patch,
+                                   test_input_sentences, test_input_merge_inplace):
+        """Test that the return from the extract_phrase method is from either _chunk_text or _merge_adjacent_chunks."""
+
+        # Invoke the `extract_phrase` method of `ChunkParser`
+        test_output = ChunkParser().extract_phrase(test_input_sentences, test_input_merge_inplace)
+
+        # If `test_input_merge_inplace`, assert `test_output` is the return value from the
+        # `_merge_adjacent_chunks` method, otherwise assert it is the return value from the `_chunk_text` method
+        if test_input_merge_inplace:
+            assert test_output == [resource__merge_adjacent_chunks_patch.return_value] * len(test_input_sentences)
+        else:
+            assert test_output == [resource__chunk_text_patch.return_value] * len(test_input_sentences)
