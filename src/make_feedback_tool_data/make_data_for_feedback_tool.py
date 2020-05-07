@@ -16,9 +16,9 @@ nltk.download('punkt')
 
 
 def preproccess_filter_comment_text(full_df, length_threshold=4000):
-    """
-    Filter down survey feedback to only english and len < 4K char comments.
+    """Filter down survey feedback to only english and len < 4K char comments.
     :param full_df:
+    :param length_threshold:
     :return:
     """
     logger.info("Removing non-english and lengthy comments...")
@@ -84,10 +84,10 @@ def extract_phrase_mentions(df, grammar_filename):
                 arg1 = re.sub(r"[()\[\]+*]", "", arg1)
                 arg2 = re.sub(r"[()\[\]+*]", "", arg2)
                 phrase = (arg1, arg2)
-                exact_phrase = PreProcess.find_needle(" ".join(phrase), comment.lower())
+                exact_phrase = list(PreProcess.find_needle(" ".join(phrase), comment.lower()).values())[0]
 
                 if exact_phrase is not None:
-                    exact_verb = PreProcess.find_needle(phrase[0], exact_phrase)
+                    exact_verb = list(PreProcess.find_needle(phrase[0], exact_phrase).values())[0]
                     if exact_verb is not None:
                         exact_phrase = (exact_verb, re.sub(exact_verb, "", exact_phrase).strip())
                         phrase_mentions[-1].append({"chunked_phrase": phrase,
@@ -104,11 +104,12 @@ def create_phrase_level_columns(df):
     :param df:
     :return:
     """
+    logger.info("Assigning exact_phrases column...")
     df['exact_phrases'] = df['themed_phrase_mentions'].progress_map(
         lambda x: "\n".join([", ".join(item['exact_phrase'])
                              for item in x
                              if item['key'][0] == "verb"]))
-
+    logger.info("Assigning generic_phrases column...")
     df['generic_phrases'] = df['themed_phrase_mentions'].progress_map(
         lambda x: "\n".join([", ".join(item['generic_phrase'])
                              for item in x
@@ -170,7 +171,8 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
                        'full_url_in_session_flag', 'UserID', 'UserNo', 'Name', 'Email',
                        'IP Address', 'Unique ID', 'Tracking Link', 'clientID', 'Page Path',
                        'Q1_y', 'Q2_y', 'Q3_y', 'Q4_y', 'Q5_y', 'Q6_y', 'Q7_y', 'Q8_y',
-                       'Started_Date', 'Ended_Date', 'Started_Date_sub_12h', 'exact_phrases', 'generic_phrases']
+                       'Started_Date', 'Ended_Date', 'Started_Date_sub_12h', 'exact_phrases',
+                       'generic_phrases']
 
     survey_data_df.rename(columns={'Q3_x_edit': 'Q3_x'}, inplace=True)
     survey_data_df[columns_to_keep].to_csv(os.path.join(DATA_DIR, output_filename), index=False)
@@ -199,7 +201,6 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     DATA_DIR = os.getenv("DIR_DATA")
-    filename = os.path.join(DATA_DIR, "")
 
     survey_data_filename = os.path.join(DATA_DIR, 'uis_20200401_20200409.csv')
     chunk_grammar_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grammar.txt")
