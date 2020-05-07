@@ -14,6 +14,10 @@ import numpy as np
 
 nltk.download('punkt')
 
+log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logging.conf')
+logging.config.fileConfig(log_file_path)
+logger = logging.getLogger(__name__)
+
 
 def preproccess_filter_comment_text(full_df, length_threshold=4000):
     """Filter down survey feedback to only english and len < 4K char comments.
@@ -29,8 +33,9 @@ def preproccess_filter_comment_text(full_df, length_threshold=4000):
 
     lang_dist = full_df['language'].value_counts().to_dict()
     logger.debug(f"Number of unique languages: {len(lang_dist)}")
-    logger.debug(f"English: {lang_dist['en'] / sum(lang_dist.values()):.2%}")
-    logger.debug(f"-: {lang_dist['-'] / sum(lang_dist.values()):.2%}")
+
+    for k, v in lang_dist.items():
+        logger.debug(f"{k}: {v / sum(lang_dist.values()):.2%}")
 
     full_df['is_en'] = full_df['language'].isin(["en", "un", "-", "sco"])
 
@@ -196,9 +201,6 @@ def drop_duplicate_rows(survey_data_df):
 
 
 if __name__ == "__main__":
-    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logging.conf')
-    logging.config.fileConfig(log_file_path)
-    logger = logging.getLogger(__name__)
 
     DATA_DIR = os.getenv("DIR_DATA")
 
