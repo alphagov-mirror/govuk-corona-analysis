@@ -81,8 +81,8 @@ def extract_phrase_mentions(df, grammar_filename):
                        ('prep_noun', 'noun'), ('prep_noun', 'prep_noun')]:
                 generic_phrase = (regex_group_verbs(arg1), regex_for_theme(arg2))
 
-                arg1 = re.sub(r"[()\[\]+*]", "", arg1)
-                arg2 = re.sub(r"[()\[\]+*]", "", arg2)
+                arg1 = re.sub(r"[?()\[\]+*]", "", arg1)
+                arg2 = re.sub(r"[?()\[\]+*]", "", arg2)
                 phrase = (arg1, arg2)
                 exact_phrase = list(PreProcess.find_needle(" ".join(phrase), comment.lower()).values())[0]
 
@@ -173,9 +173,9 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
                        'Q1_y', 'Q2_y', 'Q3_y', 'Q4_y', 'Q5_y', 'Q6_y', 'Q7_y', 'Q8_y',
                        'Started_Date', 'Ended_Date', 'Started_Date_sub_12h', 'exact_phrases',
                        'generic_phrases']
-
     survey_data_df.rename(columns={'Q3_x_edit': 'Q3_x'}, inplace=True)
-    survey_data_df[columns_to_keep].to_csv(os.path.join(DATA_DIR, output_filename), index=False)
+    logger.info(f"Saving survey data at: {output_filename}...")
+    survey_data_df[columns_to_keep].to_csv(output_filename, index=False)
 
 
 def drop_duplicate_rows(survey_data_df):
