@@ -146,7 +146,7 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
     survey_data_df['pos_tag'] = survey_data_df[['Q3_pii_removed', 'is_en']].progress_apply(
         lambda x: PreProcess.part_of_speech_tag(x[0]) if x[1] else [],
         axis=1)
-    logger.info(f"Using grammar file: {grammar_filename}")
+
     extract_phrase_mentions(survey_data_df, grammar_filename)
 
     save_intermediate_df(survey_data_df, cache_pos_filename)

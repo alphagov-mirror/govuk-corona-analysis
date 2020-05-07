@@ -1,11 +1,13 @@
 from nltk import RegexpParser, tree
 from src.make_feedback_tool_data.chunk import Chunk
-
+import logging.config
 
 class ChunkParser:
 
     def __init__(self, grammar_filename):
+        self.logger = logging.getLogger(__name__)
         self.grammar = self._load_grammar_from_file(grammar_filename)
+        self.logger.info("Initializing parser...")
         self.parser = RegexpParser(self.grammar)
 
     def _load_grammar_from_file(self, grammar_filename):
@@ -14,6 +16,7 @@ class ChunkParser:
         :param grammar_filename:
         :return:
         """
+        self.logger.info(f"Using grammar file: {grammar_filename}")
         with open(grammar_filename, "r") as f:
             return "".join(f.readlines())
 
