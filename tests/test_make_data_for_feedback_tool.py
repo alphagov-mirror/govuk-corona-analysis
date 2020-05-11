@@ -1,5 +1,6 @@
 from ast import literal_eval
 from src.make_feedback_tool_data.make_data_for_feedback_tool import (
+    create_phrase_level_columns,
     extract_phrase_mentions,
     preproccess_filter_comment_text,
     save_intermediate_df
@@ -487,4 +488,39 @@ def test_extract_phrase_mentions_returns_correctly(test_input, test_expected):
 
     # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
     # `extract_phrase_mentions`
+    assert_frame_equal(test_input, test_expected)
+
+
+# Define expected outputs for the `test_create_phrase_level_columns_returns_correctly` test
+args_create_phrase_level_columns_returns_correctly_expected = [
+    ("test to see if, this example", "find-smthg, unknown"),
+    ("to extract, lemma", "unknown, unknown"),
+    ("test to see if, this example\nto extract, lemma", "find-smthg, unknown\nunknown, unknown"),
+    ("tried to signed up for, advice", "apply-smthg, information")
+]
+
+# Initialise a storing variable for the `test_create_phrase_level_columns_returns_correctly` test
+args_create_phrase_level_columns_returns_correctly = []
+
+# Define the test cases for the `test_create_phrase_level_columns_returns_correctly` test
+for i, e in zip(args_extract_phrase_mentions_returns_correctly_expected,
+                args_create_phrase_level_columns_returns_correctly_expected):
+    args_create_phrase_level_columns_returns_correctly.append((
+        pd.DataFrame([i], columns=["themed_phrase_mentions"]),
+        pd.DataFrame([i], columns=["themed_phrase_mentions"]).assign(exact_phrases=e[0], generic_phrases=e[1])
+    ))
+
+
+@pytest.mark.parametrize("test_input, test_expected", args_create_phrase_level_columns_returns_correctly)
+def test_create_phrase_level_columns_returns_correctly(test_input, test_expected):
+    """Test that the create_phrase_level_columns function returns correctly."""
+
+    # Assert the `test_input` pandas DataFrame is not the same as `test_expected`
+    assert not test_input.equals(test_expected)
+
+    # Call the `create_phrase_level_columns` function; assumes the default grammar file is unchanged
+    _ = create_phrase_level_columns(test_input)
+
+    # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
+    # `create_phrase_level_columns`
     assert_frame_equal(test_input, test_expected)
