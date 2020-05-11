@@ -1,6 +1,7 @@
 from ast import literal_eval
 from src.make_feedback_tool_data.make_data_for_feedback_tool import (
     create_phrase_level_columns,
+    drop_duplicate_rows,
     extract_phrase_mentions,
     preproccess_filter_comment_text,
     save_intermediate_df
@@ -523,4 +524,37 @@ def test_create_phrase_level_columns_returns_correctly(test_input, test_expected
 
     # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
     # `create_phrase_level_columns`
+    assert_frame_equal(test_input, test_expected)
+
+
+# Define the test cases for the `test_drop_duplicate_rows_returns_correctly` function as dictionaries,
+# and then coerce into pandas DataFrames. The first two test cases should be unchanged, the third test case should
+# drop one duplicate row, the fourth test case should drop one duplicate row and reset in the index, and the fifth
+# test case should drop two rows
+args_drop_duplicate_rows_returns_correctly = [
+    ({"primary_key": [0, 1, 2], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "C"]},
+     {"primary_key": [0, 1, 2], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "C"]}),
+    ({"primary_key": [0, 1, 2], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "B"]},
+     {"primary_key": [0, 1, 2], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "B"]}),
+    ({"primary_key": [0, 1, 1], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "C"]},
+     {"primary_key": [0, 1], "intents_clientID": ["a", "b"], "session_id": ["A", "B"]}),
+    ({"primary_key": [1, 1, 0], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "C"]},
+     {"primary_key": [1, 0], "intents_clientID": ["a", "c"], "session_id": ["A", "C"]}),
+    ({"primary_key": [0, 0, 0], "intents_clientID": ["a", "b", "c"], "session_id": ["A", "B", "C"]},
+     {"primary_key": [0], "intents_clientID": ["a"], "session_id": ["A"]}),
+]
+args_drop_duplicate_rows_returns_correctly = [
+    tuple(map(pd.DataFrame, a)) for a in args_drop_duplicate_rows_returns_correctly
+]
+
+
+@pytest.mark.parametrize("test_input, test_expected", args_drop_duplicate_rows_returns_correctly)
+def test_drop_duplicate_rows_returns_correctly(test_input, test_expected):
+    """Test the drop_duplicate_rows function returns correctly."""
+
+    # Call the `drop_duplicate_rows` function; assumes the default grammar file is unchanged
+    _ = drop_duplicate_rows(test_input)
+
+    # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
+    # `drop_duplicate_rows` if it has duplicate values in `primary_key`
     assert_frame_equal(test_input, test_expected)
