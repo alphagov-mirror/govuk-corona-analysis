@@ -207,7 +207,7 @@ if __name__ == "__main__":
     survey_data_filename = os.path.join(DATA_DIR, 'uis_20200401_20200409.csv')
     chunk_grammar_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grammar.txt")
     cache_pos_data_filename = survey_data_filename.replace(".csv", "_cache.csv")
-    output_data_filename = survey_data_filename.replace(".csv", "_phrases_user_groups.csv")
+    output_data_filename = survey_data_filename.replace(".csv", "_exact_generic_phrases.csv")
 
     create_dataset(survey_data_filename, chunk_grammar_filename, cache_pos_data_filename, output_data_filename)
     # parser = ChunkParser(chunk_grammar_filename)
