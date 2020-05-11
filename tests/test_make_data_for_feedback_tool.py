@@ -1,5 +1,6 @@
 from ast import literal_eval
 from src.make_feedback_tool_data.make_data_for_feedback_tool import (
+    extract_phrase_mentions,
     preproccess_filter_comment_text,
     save_intermediate_df
 )
@@ -149,7 +150,6 @@ args_save_intermediate_df_inputs = [
                  [("I", "PRP", "-PRON-"), ("could", "MD", "could"), ("not", "RB", "not"), ("!", ".", "!")]]]}
 ]
 
-
 # Define the additional expected columns in the outputted CSV by the `save_intermediate_df` function - this will be
 # in addition to the columns in `args_save_intermediate_df_inputs`
 args_save_intermediate_df_expected = [
@@ -223,3 +223,268 @@ class TestSaveIntermediateDf:
         # Assert the CSV output is correct; need to apply `ast.literal_eval` element-wise, as the CSV will contain
         # strings of the lists, rather than the lists themselves
         assert_frame_equal(pd.read_csv(test_input_file_path).applymap(literal_eval), test_expected_df)
+
+
+# Define the example feedback that would result in `args_save_intermediate_df_inputs`
+args_extract_phrase_mentions_inputs_q3_x_edit = [
+    "I am going to go and test to see if this example is correct.",
+    "If this test passes, we should be able to extract lemma and words.",
+    "I am going to go and test to see if this example is correct. If this test passes, we should be able to extract "
+    "lemma and words.",
+    "I tried to signed up for advice due to the ongoing COVID 19 outbreak with specific concern about vulnerable "
+    "people. I could not!"
+]
+
+
+# Define the inputs for the `extract_phrase_mentions` tests, where each tuple is a pandas DataFrame with columns
+# 'Q3_x_edit' and 'pos_tag'
+args_extract_phrase_mentions_integration = [
+    pd.DataFrame({"Q3_x_edit": t, **i}) for t, i in zip(args_extract_phrase_mentions_inputs_q3_x_edit,
+                                                        args_save_intermediate_df_inputs)
+]
+
+
+@pytest.fixture
+def patch_chunkparser_extract_phrase(mocker):
+    """Patch both the ChunkParser class, and its extract_phrase method, but only return the latter."""
+    patch_chunkparser = mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.ChunkParser")
+    return patch_chunkparser.return_value.extract_phrase
+
+
+@pytest.fixture
+def patch_preprocess(mocker):
+    """Patch the PreProcess class."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.PreProcess")
+
+
+@pytest.mark.parametrize("test_input_df", args_extract_phrase_mentions_integration)
+@pytest.mark.parametrize("test_input_grammar_filename", [None, "hello.txt", "world.txt"])
+class TestExtractPhraseMentionsIntegration:
+
+    def test_calls_correctly(self, mocker, test_input_df, test_input_grammar_filename):
+        """Test extract_phrase_mentions calls ChunkParser correctly."""
+
+        # Patch the `ChunkParser` class
+        patch_chunkparser = mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.ChunkParser")
+
+        # Call the `extract_phrase_mentions` function
+        _ = extract_phrase_mentions(test_input_df, test_input_grammar_filename)
+
+        # Assert `ChunkParser` is called once with the correct arguments
+        patch_chunkparser.assert_called_once_with(test_input_grammar_filename)
+
+    def test_calls_extract_phrase(self, mocker, patch_chunkparser_extract_phrase, test_input_df,
+                                  test_input_grammar_filename):
+        """Test extract_phrase_mentions calls ChunkParser.extract_phrase correctly."""
+
+        # Call the `extract_phrase_mentions` function
+        _ = extract_phrase_mentions(test_input_df, test_input_grammar_filename)
+
+        # Assert `ChunkParser.extract_phrase` is called the correct number of times
+        assert patch_chunkparser_extract_phrase.call_count == len(test_input_df)
+
+        # Assert `ChunkParser.extract_phrase` is called with the correct arguments
+        for v in test_input_df["pos_tag"].values:
+            assert patch_chunkparser_extract_phrase.call_args_list == [mocker.call(v, merge_inplace=True)]
+
+    def test_calls_preprocess_compute_combinations_correctly(self, mocker, patch_chunkparser_extract_phrase,
+                                                             patch_preprocess, test_input_df,
+                                                             test_input_grammar_filename):
+        """Test extract_phrase_mentions calls PreProcess.compute_combinations correctly."""
+
+        # Call the `extract_phrase_mentions` function
+        _ = extract_phrase_mentions(test_input_df, test_input_grammar_filename)
+
+        # Assert `PreProcess.compute_combinations` is called the correct number of times
+        assert patch_preprocess.compute_combinations.call_count == len(test_input_df)
+
+        # Define the expected call argument for each iteration - this will be the return value from calling
+        # `ChunkParser.extract_phrase`
+        test_expected = [mocker.call(patch_chunkparser_extract_phrase.return_value, 2)]
+
+        # Assert `ChunkParser.extract_phrase` is called with the correct arguments
+        assert patch_preprocess.compute_combinations.call_args_list == test_expected * len(test_input_df)
+
+
+# Define the expected call arguments for `regex_group_verbs`
+args_regex_group_verbs_call_args_expected = [
+    ["test to see if"],
+    ["to extract"],
+    ["test to see if", "to extract"],
+    ["tried to signed up for", "advice", "due to the ongoing covid 19 outbreak", "with specific concern"]
+]
+
+# Define the expected call arguments for `regex_for_theme`
+args_regex_for_theme_call_args_expected = [
+    ["this example"],
+    ["lemma"],
+    ["this example", "lemma"],
+    ["advice", "due to the ongoing covid 19 outbreak", "with specific concern", "about vulnerable people"]
+]
+
+# Define the test cases for the `test_calls_regex_group_verbs_correctly` test in the
+# `TestExtractPhraseMentionsIntegrationComboSection` test class
+args_calls_regex_group_verbs_correctly = [
+    (i.copy(deep=True), e) for i, e in zip(args_extract_phrase_mentions_integration,
+                                           args_regex_group_verbs_call_args_expected)
+]
+
+# Define the test cases for the `test_calls_regex_for_theme_correctly` test in the
+# `TestExtractPhraseMentionsIntegrationComboSection` test class
+args_calls_regex_for_theme_correctly = [
+    (i.copy(deep=True), e) for i, e in zip(args_extract_phrase_mentions_integration,
+                                           args_regex_for_theme_call_args_expected)
+]
+
+# Define the expected call arguments for the `PreProcess.find_needle` method in `extract_phrase_mentions`
+args_find_needle_called_correctly_expected = [
+    ([("test to see if this example", "i am going to go and test to see if this example is correct."),
+      ("test to see if", "test to see if this example")]),
+    ([("to extract lemma", "if this test passes, we should be able to extract lemma and words."),
+      ("to extract", "to extract lemma")]),
+    ([("test to see if this example", "i am going to go and test to see if this example is correct. if this test "
+                                      "passes, we should be able to extract lemma and words."),
+      ("test to see if", "test to see if this example"),
+      ("to extract lemma", "i am going to go and test to see if this example is correct. if this test passes, "
+                           "we should be able to extract lemma and words."),
+      ("to extract", "to extract lemma")]),
+    ([("tried to signed up for advice", "i tried to signed up for advice due to the ongoing covid 19 outbreak with "
+                                        "specific concern about vulnerable people. i could not!"),
+      ("tried to signed up for", "tried to signed up for advice"),
+      ("advice due to the ongoing covid 19 outbreak", "i tried to signed up for advice due to the ongoing covid 19 "
+                                                      "outbreak with specific concern about vulnerable people. i could "
+                                                      "not!"),
+      ("advice", "advice due to the ongoing covid 19 outbreak"),
+      ("due to the ongoing covid 19 outbreak with specific concern", "i tried to signed up for advice due to the "
+                                                                     "ongoing covid 19 outbreak with specific concern "
+                                                                     "about vulnerable people. i could not!"),
+      ("due to the ongoing covid 19 outbreak", "due to the ongoing covid 19 outbreak with specific concern"),
+      ("with specific concern about vulnerable people", "i tried to signed up for advice due to the ongoing covid 19 "
+                                                        "outbreak with specific concern about vulnerable people. i "
+                                                        "could not!"),
+      ("with specific concern", "with specific concern about vulnerable people")])
+]
+
+
+# Define the test cases for the `test_find_needle_called_correctly` test in the
+# `TestExtractPhraseMentionsIntegrationComboSection` test class
+args_find_needle_called_correctly = [
+    (i.copy(deep=True), e) for i, e in zip(args_extract_phrase_mentions_integration,
+                                           args_find_needle_called_correctly_expected)
+]
+
+
+class TestExtractPhraseMentionsIntegrationComboSection:
+
+    @pytest.mark.parametrize("test_input, test_expected", args_calls_regex_group_verbs_correctly)
+    def test_calls_regex_group_verbs_correctly(self, mocker, test_input, test_expected):
+        """Test extract_phrase_mentions calls regex_group_verbs correctly."""
+
+        # Patch the `regex_group_verbs` function
+        patch_regex_group_verbs = mocker.patch(
+            "src.make_feedback_tool_data.make_data_for_feedback_tool.regex_group_verbs"
+        )
+
+        # Call the `extract_phrase_mentions` function; assumes the default grammar file is unchanged
+        _ = extract_phrase_mentions(test_input, None)
+
+        # Assert `regex_group_verbs` is called the expected number of times
+        assert patch_regex_group_verbs.call_count == len(test_expected)
+
+        # Assert the call arguments to `regex_group_verbs` are as expected
+        assert patch_regex_group_verbs.call_args_list == [mocker.call(a) for a in test_expected]
+
+    @pytest.mark.parametrize("test_input, test_expected", args_calls_regex_for_theme_correctly)
+    def test_calls_regex_for_theme_correctly(self, mocker, test_input, test_expected):
+        """Test extract_phrase_mentions calls regex_for_theme correctly."""
+
+        # Patch the `regex_for_theme` function
+        patch_regex_for_theme = mocker.patch(
+            "src.make_feedback_tool_data.make_data_for_feedback_tool.regex_for_theme"
+        )
+
+        # Call the `extract_phrase_mentions` function; assumes the default grammar file is unchanged
+        _ = extract_phrase_mentions(test_input, None)
+
+        # Assert `regex_for_theme` is called the expected number of times
+        assert patch_regex_for_theme.call_count == len(test_expected)
+
+        # Assert the call arguments to `regex_for_theme` are as expected
+        assert patch_regex_for_theme.call_args_list == [mocker.call(a) for a in test_expected]
+
+    @pytest.mark.parametrize("test_input, test_expected", args_find_needle_called_correctly)
+    def test_find_needle_called_correctly(self, mocker, test_input, test_expected):
+        """Test extract_phrase_mentions calls the PreProcess.find_needle method corrrectly."""
+
+        # Patch the `PreProcess.find_needle` method
+        patch_find_needle = mocker.patch(
+            "src.make_feedback_tool_data.make_data_for_feedback_tool.PreProcess.find_needle",
+            wraps=PreProcess.find_needle
+        )
+
+        # Call the `extract_phrase_mentions` function; assumes the default grammar file is unchanged
+        _ = extract_phrase_mentions(test_input, None)
+
+        # Assert that the `PreProcess.find_needle` method is called the correct number of times
+        assert patch_find_needle.call_count == len(test_expected)
+
+        # Assert the call arguments for the `PreProcess.find_needle` method are correct
+        assert patch_find_needle.call_args_list == [mocker.call(*e) for e in test_expected]
+
+
+# Define the expected values of the `test_extract_phrase_mentions_returns_correctly` test
+args_extract_phrase_mentions_returns_correctly_expected = [
+    ([[{"chunked_phrase": ("test to see if", "this example"),
+        "exact_phrase": ("test to see if", "this example"),
+        "generic_phrase": ("find-smthg", "unknown"),
+        "key": ("verb", "noun")}]]),
+    ([[{"chunked_phrase": ("to extract", "lemma"),
+        "exact_phrase": ("to extract", "lemma"),
+        "generic_phrase": ("unknown", "unknown"),
+        "key": ("verb", "noun")}]]),
+    ([[{"chunked_phrase": ("test to see if", "this example"),
+        "exact_phrase": ("test to see if", "this example"),
+        "generic_phrase": ("find-smthg", "unknown"),
+        "key": ("verb", "noun")},
+       {"chunked_phrase": ("to extract", "lemma"),
+        "exact_phrase": ("to extract", "lemma"),
+        "generic_phrase": ("unknown", "unknown"),
+        "key": ("verb", "noun")}]]),
+    ([[{"chunked_phrase": ("tried to signed up for", "advice"),
+        "exact_phrase": ("tried to signed up for", "advice"),
+        "generic_phrase": ("apply-smthg", "information"),
+        "key": ("verb", "noun")},
+       {"chunked_phrase": ("advice", "due to the ongoing covid 19 outbreak"),
+        "exact_phrase": ("advice", "due to the ongoing covid 19 outbreak"),
+        "generic_phrase": ("unknown", "covid-mention"),
+        "key": ("noun", "prep_noun")},
+       {"chunked_phrase": ("due to the ongoing covid 19 outbreak", "with specific concern"),
+        "exact_phrase": ("due to the ongoing covid 19 outbreak", "with specific concern"),
+        "generic_phrase": ("unknown", "unknown"), "key": ("prep_noun", "prep_noun")},
+       {"chunked_phrase": ("with specific concern", "about vulnerable people"),
+        "exact_phrase": ("with specific concern", "about vulnerable people"),
+        "generic_phrase": ("unknown", "vulnerable"),
+        "key": ("prep_noun", "prep_noun")}]])
+]
+
+# Define the test cases for the `test_extract_phrase_mentions_returns_correctly` test
+args_extract_phrase_mentions_returns_correctly = [
+    (i.copy(deep=True), i.copy(deep=True).assign(themed_phrase_mentions=e)) for i, e in zip(
+        args_extract_phrase_mentions_integration, args_extract_phrase_mentions_returns_correctly_expected
+    )
+]
+
+
+@pytest.mark.parametrize("test_input, test_expected", args_extract_phrase_mentions_returns_correctly)
+def test_extract_phrase_mentions_returns_correctly(test_input, test_expected):
+    """Test that the extract_phrase_mentions returns the correct output."""
+
+    # Assert the `test_input` pandas DataFrame is not the same as `test_expected`
+    assert not test_input.equals(test_expected)
+
+    # Call the `extract_phrase_mentions` function; assumes the default grammar file is unchanged
+    _ = extract_phrase_mentions(test_input, None)
+
+    # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
+    # `extract_phrase_mentions`
+    assert_frame_equal(test_input, test_expected)

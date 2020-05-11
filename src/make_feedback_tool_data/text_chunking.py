@@ -137,8 +137,9 @@ class ChunkParser:
         :param merge_inplace: Default: False. If True, adjacent, identically-labelled grammar `Chunk` objects in each
             sentence list of `sentences` are merged together, unless the are 'prep_noun'. See
             `ChunkParser._merge_adjacent_chunks` for further information. If False, no merging is performed.
-        :return: A list of `Chunk` objects, where each object represents a phrase extracted based on grammar rules
-            defined in `grammar_filename` when the `ChunkParser` object was initialised.
+        :return: A nested list of `Chunk` objects, where each object represents a phrase extracted based on grammar
+            rules defined in `grammar_filename` when the `ChunkParser` object was initialised; each inner list
+            represents a separate sentence.
 
         """
 
