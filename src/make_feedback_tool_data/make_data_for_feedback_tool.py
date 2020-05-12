@@ -245,7 +245,7 @@ def create_dataset(survey_filename: str, grammar_filename: str, cache_pos_filena
     survey_data_df = create_phrase_level_columns(survey_data_df)
 
     # Overwrite the `Q3_x` column with `Q3_x_edit`
-    survey_data_df = survey_data_df.rename(columns={"Q3_x_edit": "Q3_x"})
+    survey_data_df = survey_data_df.assign(Q3_x=survey_data_df["Q3_x_edit"])
 
     # Define the columns to keep - all the original columns in `df`, but also the `exact_phrases`,
     # and `generic_phrases` columns
