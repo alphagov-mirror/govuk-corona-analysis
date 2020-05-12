@@ -1,5 +1,8 @@
 from ast import literal_eval
+from datetime import timedelta
+from faker import Faker
 from src.make_feedback_tool_data.make_data_for_feedback_tool import (
+    create_dataset,
     create_phrase_level_columns,
     drop_duplicate_rows,
     extract_phrase_mentions,
@@ -8,10 +11,14 @@ from src.make_feedback_tool_data.make_data_for_feedback_tool import (
 )
 from src.make_feedback_tool_data.preprocess import PreProcess
 from pandas.testing import assert_frame_equal
+import numpy as np
 import pandas as pd
 import pytest
+import random
 import re
 
+# Set the random seed
+random.seed(42)
 
 # Create an example pandas DataFrame of data
 DF_EXAMPLE_RAW = pd.DataFrame.from_dict({
@@ -188,12 +195,12 @@ args_save_intermediate_df = [
 
 @pytest.fixture
 def patch_pandas_dataframe_to_csv(mocker):
-    """Patch the pandas.DataFrame.to_csv method for the TestSaveIntermediateDf test class."""
+    """Patch the pandas.DataFrame.to_csv method."""
     return mocker.patch("pandas.DataFrame.to_csv")
 
 
 @pytest.fixture
-def temp_intermediate_folder(tmpdir_factory):
+def temp_folder(tmpdir_factory):
     """Create a temporary directory to store the output from save_intermediate_df."""
     return tmpdir_factory.mktemp("temp")
 
@@ -206,21 +213,20 @@ class TestSaveIntermediateDf:
         """Test save_intermediate_df calls pandas.DataFrame.to_csv correctly."""
 
         # Call the `save_intermediate_df` function
-        _ = save_intermediate_df(test_input_df, test_input_cache_pos_filename)
+        save_intermediate_df(test_input_df, test_input_cache_pos_filename)
 
         # Assert `pandas.DataFrame.to_csv` is called with the correct arguments
         patch_pandas_dataframe_to_csv.assert_called_once_with(test_input_cache_pos_filename, index=False)
 
     @pytest.mark.parametrize("test_input_df, test_expected_df", args_save_intermediate_df)
-    def test_returns_correctly(self, temp_intermediate_folder, test_input_df, test_input_cache_pos_filename,
-                               test_expected_df):
+    def test_returns_correctly(self, temp_folder, test_input_df, test_input_cache_pos_filename, test_expected_df):
         """Test the outputted CSV from save_intermediate_df is correct."""
 
         # Define the file path for the CSV
-        test_input_file_path = temp_intermediate_folder.join(test_input_cache_pos_filename)
+        test_input_file_path = temp_folder.join(test_input_cache_pos_filename)
 
         # Call the `save_intermediate_df` function
-        _ = save_intermediate_df(test_input_df, test_input_file_path)
+        save_intermediate_df(test_input_df, test_input_file_path)
 
         # Assert the CSV output is correct; need to apply `ast.literal_eval` element-wise, as the CSV will contain
         # strings of the lists, rather than the lists themselves
@@ -476,22 +482,6 @@ args_extract_phrase_mentions_returns_correctly = [
     )
 ]
 
-
-@pytest.mark.parametrize("test_input, test_expected", args_extract_phrase_mentions_returns_correctly)
-def test_extract_phrase_mentions_returns_correctly(test_input, test_expected):
-    """Test that the extract_phrase_mentions returns the correct output."""
-
-    # Assert the `test_input` pandas DataFrame is not the same as `test_expected`
-    assert not test_input.equals(test_expected)
-
-    # Call the `extract_phrase_mentions` function; assumes the default grammar file is unchanged
-    _ = extract_phrase_mentions(test_input, None)
-
-    # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
-    # `extract_phrase_mentions`
-    assert_frame_equal(test_input, test_expected)
-
-
 # Define expected outputs for the `test_create_phrase_level_columns_returns_correctly` test
 args_create_phrase_level_columns_returns_correctly_expected = [
     ("test to see if, this example", "find-smthg, unknown"),
@@ -510,22 +500,6 @@ for i, e in zip(args_extract_phrase_mentions_returns_correctly_expected,
         pd.DataFrame([i], columns=["themed_phrase_mentions"]),
         pd.DataFrame([i], columns=["themed_phrase_mentions"]).assign(exact_phrases=e[0], generic_phrases=e[1])
     ))
-
-
-@pytest.mark.parametrize("test_input, test_expected", args_create_phrase_level_columns_returns_correctly)
-def test_create_phrase_level_columns_returns_correctly(test_input, test_expected):
-    """Test that the create_phrase_level_columns function returns correctly."""
-
-    # Assert the `test_input` pandas DataFrame is not the same as `test_expected`
-    assert not test_input.equals(test_expected)
-
-    # Call the `create_phrase_level_columns` function; assumes the default grammar file is unchanged
-    _ = create_phrase_level_columns(test_input)
-
-    # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
-    # `create_phrase_level_columns`
-    assert_frame_equal(test_input, test_expected)
-
 
 # Define the test cases for the `test_drop_duplicate_rows_returns_correctly` function as dictionaries,
 # and then coerce into pandas DataFrames. The first two test cases should be unchanged, the third test case should
@@ -547,14 +521,466 @@ args_drop_duplicate_rows_returns_correctly = [
     tuple(map(pd.DataFrame, a)) for a in args_drop_duplicate_rows_returns_correctly
 ]
 
+# Define test cases for the `test_function_returns_correctly` test to run similar functions simultaneously
+args_function_returns_correctly = [
+    *[(drop_duplicate_rows, *a) for a in args_drop_duplicate_rows_returns_correctly],
+    *[(extract_phrase_mentions, *a) for a in args_extract_phrase_mentions_returns_correctly],
+    *[(create_phrase_level_columns, *a) for a in args_create_phrase_level_columns_returns_correctly]
+]
 
-@pytest.mark.parametrize("test_input, test_expected", args_drop_duplicate_rows_returns_correctly)
-def test_drop_duplicate_rows_returns_correctly(test_input, test_expected):
-    """Test the drop_duplicate_rows function returns correctly."""
 
-    # Call the `drop_duplicate_rows` function; assumes the default grammar file is unchanged
-    _ = drop_duplicate_rows(test_input)
+@pytest.mark.parametrize("test_func, test_input, test_expected", args_function_returns_correctly)
+def test_function_returns_correctly(test_func, test_input, test_expected):
+    """Test a function returns correctly using the default grammar file."""
+    assert_frame_equal(test_func(test_input), test_expected)
 
-    # Assert the `test_input` pandas DataFrame is now the same as `test_expected`, as it should be updated by
-    # `drop_duplicate_rows` if it has duplicate values in `primary_key`
-    assert_frame_equal(test_input, test_expected)
+
+# TODO: amend test cases for `create_dataset` to also test the regular expressions processing in the function
+
+# Set the Faker seed, and instantiate a Faker class sent to GB domain
+Faker.seed(42)
+fake = Faker("en_GB")
+
+# Define the number of rows of data to create in the example survey data
+example_survey_len = len(args_extract_phrase_mentions_inputs_q3_x_edit) + 1
+
+# Create some example data for a few columns that will be manipulated by the `create_dataset` function; note all
+# entries here are randomly generated, and do not represent real data except in formatting
+EXAMPLE_SURVEY_DICT = {
+    "primary_key": list(range(example_survey_len)),
+    "intents_clientID": random.sample(range(1000000000), example_survey_len),
+    "visitId": random.sample(range(1000000000), example_survey_len),
+    "fullVisitorId": random.sample(range(1000000000000000000), example_survey_len),
+    "hits_pagePath": [f"/{fake.slug()}" for _ in range(example_survey_len)],
+    "Started": [fake.date_time_this_month() for _ in range(example_survey_len)],
+    "Ended": None,
+    "Q1_x": random.choices(["Personal", "Professional", "-"], k=example_survey_len),
+    "Q2_x": [fake.job() for _ in range(example_survey_len)],
+    "Q3_x": random.sample([*args_extract_phrase_mentions_inputs_q3_x_edit, "-"], example_survey_len),
+    "Q4_x": random.choices(["Yes", "Not sure / Not yet", "No", "-"], k=example_survey_len),
+    "Q5_x": random.choices(["Very satisfied", "Satisfied", "Neither satisfied nor dissatisfied", "Dissatisfied",
+                            "Not at all satisfied", "-"], k=example_survey_len),
+    "Q6_x": random.choices(["Yes", "No", "-"], k=example_survey_len),
+    "Q7_x": random.choices(["-"] + [fake.sentence() for _ in range(9)], weights=[55] + [5] * 9, k=example_survey_len),
+    "Q8_x": random.choices(["-"] + [fake.paragraph() for _ in range(9)], weights=[55] + [5] * 9, k=example_survey_len),
+    "session_id": None,
+    "dayofweek": None,
+    "isWeekend": None,
+    "hour": None,
+    "country": random.choices([fake.local_latlng("GB") for _ in range(80)] + [fake.local_latlng() for _ in range(20)],
+                              k=example_survey_len),
+    "country_grouping": None,
+    "UK_region": None,
+    "UK_metro_area": None,
+    "channelGrouping": random.choices(["(Other)", "Direct", "Display", "Email", "Organic Search", "Paid Search",
+                                       "Referral", "Social", None], k=example_survey_len),
+    "deviceCategory": random.choices(["desktop", "mobile", None, "tablet"], k=example_survey_len),
+    "total_seconds_in_session_across_days": random.choices([None, *range(1000)], k=example_survey_len),
+    "total_pageviews_in_session_across_days": random.choices([None, *range(1000)], k=example_survey_len),
+    "finding_count": random.choices(range(100), k=example_survey_len),
+    "updates_and_alerts_count": random.choices(range(100), k=example_survey_len),
+    "news_count": random.choices(range(100), k=example_survey_len),
+    "decisions_count": random.choices(range(100), k=example_survey_len),
+    "speeches_and_statements_count": random.choices(range(100), k=example_survey_len),
+    "transactions_count": random.choices(range(100), k=example_survey_len),
+    "regulation_count": random.choices(range(100), k=example_survey_len),
+    "guidance_count": random.choices(range(100), k=example_survey_len),
+    "business_support_count": random.choices(range(100), k=example_survey_len),
+    "policy_count": random.choices(range(100), k=example_survey_len),
+    "consultations_count": random.choices(range(100), k=example_survey_len),
+    "research_count": random.choices(range(100), k=example_survey_len),
+    "statistics_count": random.choices(range(100), k=example_survey_len),
+    "transparency_data_count": random.choices(range(100), k=example_survey_len),
+    "freedom_of_information_releases_count": random.choices(range(100), k=example_survey_len),
+    "incidents_count": random.choices(range(100), k=example_survey_len),
+    "done_page_flag": random.choices([0, 1], k=example_survey_len),
+    "count_client_error": random.choices(range(100), k=example_survey_len),
+    "count_server_error": random.choices(range(100), k=example_survey_len),
+    "ga_visit_start_timestamp": None,
+    "ga_visit_end_timestamp": None,
+    "intents_started_date": None,
+    "events_sequence": random.choices(["-"] + [fake.sentence() for _ in range(9)], weights=[55] + [5] * 9,
+                                      k=example_survey_len),
+    "search_terms_sequence": None,
+    "cleaned_search_terms_sequence": random.choices(["-"] + [fake.sentence() for _ in range(9)], weights=[55] + [5] * 9,
+                                                    k=example_survey_len),
+    "top_level_taxons_sequence": [">>".join(random.choices([""] + [fake.sentence() for _ in range(9)],
+                                                           weights=[55] + [5] * 9, k=random.choice(range(1, 20))))
+                                  for _ in range(example_survey_len)],
+    "page_format_sequence": [">>".join(random.choices([""] + [fake.sentence() for _ in range(9)],
+                                                      weights=[55] + [5] * 9, k=random.choice(range(1, 20))))
+                             for _ in range(example_survey_len)],
+    "Sequence": random.choices(["-"] + [fake.sentence() for _ in range(9)], weights=[55] + [5] * 9,
+                               k=example_survey_len),
+    "PageSequence": [">>".join(random.choices([""] + [fake.sentence() for _ in range(9)],
+                                              weights=[55] + [5] * 9, k=random.choice(range(1, 20))))
+                     for _ in range(example_survey_len)],
+    "flag_for_criteria": random.choices([None, 0, 1], k=example_survey_len),
+    "full_url_in_session_flag": random.choices([0, 1], k=example_survey_len),
+    "UserID": random.sample(range(1000000000), example_survey_len),
+    "UserNo": random.sample(range(10000), example_survey_len),
+    "Name": [fake.name() for _ in range(example_survey_len)],
+    "Email": [fake.ascii_email() for _ in range(example_survey_len)],
+    "IP Address": [fake.ipv4() for _ in range(example_survey_len)],
+    "Unique ID": [np.nan for _ in range(example_survey_len)],
+    "Tracking Link": random.choices(["Default Web Link", "GOV UK footer - email", "GOV UK footer - no email"],
+                                    k=example_survey_len),
+    "clientID": random.sample(range(1000000000), example_survey_len),
+    "Page Path": [f"/{fake.slug()}" for _ in range(example_survey_len)],
+    "Q1_y": None,
+    "Q2_y": None,
+    "Q3_y": None,
+    "Q4_y": None,
+    "Q5_y": None,
+    "Q6_y": None,
+    "Q7_y": None,
+    "Q8_y": None,
+    "Started_Date": None,
+    "Ended_Date": None,
+    "Started_Date_sub_12h": None
+}
+
+# Update various None entries in `EXAMPLE_SURVEY_DICT`
+EXAMPLE_SURVEY_DICT.update({
+    "Ended": [dt + timedelta(minutes=random.randint(10, 120)) for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "session_id": [f"{fv}-{v}" for fv, v in zip(EXAMPLE_SURVEY_DICT["fullVisitorId"], EXAMPLE_SURVEY_DICT["visitId"])],
+    "dayofweek": [dt.weekday() for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "isWeekend": [int(dt.weekday() is None or dt.weekday() > 5) for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "hour": [dt.hour for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "country_grouping": ["UK" if c[3] == "GB" else random.choice(["EU_EEA_Swiss", "Other"]) for c in
+                         EXAMPLE_SURVEY_DICT["country"]],
+    "UK_region": [random.choice(["England", "Scotland", "Wales", "Northern Ireland"]) if c[3] == "GB" else
+                  random.choice(["not UK", "(not set)"]) for c in EXAMPLE_SURVEY_DICT["country"]],
+    "UK_metro_area": [c[2] if c[3] == "GB" else random.choice(["not UK", "(not set)"]) for c in
+                      EXAMPLE_SURVEY_DICT["country"]],
+    "ga_visit_start_timestamp": [dt - timedelta(minutes=random.randint(60, 120)) for dt in
+                                 EXAMPLE_SURVEY_DICT["Started"]],
+    "ga_visit_end_timestamp": [dt - timedelta(minutes=random.randint(5, 59)) for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "intents_started_date": [int(dt.strftime("%Y%m%d")) for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "search_terms_sequence": ["+".join(s) for s in EXAMPLE_SURVEY_DICT["cleaned_search_terms_sequence"]],
+    "Q1_y": EXAMPLE_SURVEY_DICT["Q1_x"],
+    "Q2_y": EXAMPLE_SURVEY_DICT["Q2_x"],
+    "Q3_y": EXAMPLE_SURVEY_DICT["Q3_x"],
+    "Q4_y": EXAMPLE_SURVEY_DICT["Q4_x"],
+    "Q5_y": EXAMPLE_SURVEY_DICT["Q5_x"],
+    "Q6_y": EXAMPLE_SURVEY_DICT["Q6_x"],
+    "Q7_y": EXAMPLE_SURVEY_DICT["Q7_x"],
+    "Q8_y": EXAMPLE_SURVEY_DICT["Q8_x"],
+    "Started_Date": [int(dt.strftime("%Y%m%d")) for dt in EXAMPLE_SURVEY_DICT["Started"]],
+    "Started_Date_sub_12h": [int((dt - timedelta(hours=12)).strftime("%Y%m%d"))
+                             for dt in EXAMPLE_SURVEY_DICT["Started"]]
+})
+EXAMPLE_SURVEY_DICT.update({
+    "country": [c[3] for c in EXAMPLE_SURVEY_DICT["country"]],
+    "Ended_Date": [int(dt.strftime("%Y%m%d")) for dt in EXAMPLE_SURVEY_DICT["Ended"]]
+})
+
+# Define some additional dummy columns that will be dropped by the `create_dataset` function
+COLS_DROPPED = ["test_col_a", "test_col_b", "test_col_b"]
+
+# Add some dummy data that will be dropped to `EXAMPLE_SURVEY_DICT`
+for cols_dummy in COLS_DROPPED:
+    EXAMPLE_SURVEY_DICT[cols_dummy] = random.sample(range(1000000), example_survey_len)
+
+# Create a pandas DataFrame from `EXAMPLE_SURVEY_DICT`, and change all datetime columns to objects
+EXAMPLE_SURVEY_DF = pd.DataFrame.from_dict(EXAMPLE_SURVEY_DICT)
+EXAMPLE_SURVEY_DF = EXAMPLE_SURVEY_DF.assign(
+    **{c: EXAMPLE_SURVEY_DF[c].replace(r"^\s*$", np.nan, regex=True) for c in EXAMPLE_SURVEY_DF.select_dtypes(
+        include="object").columns},
+    **{c: EXAMPLE_SURVEY_DF[c].dt.strftime("%Y-%m-%d %H:%M:%S") for c in EXAMPLE_SURVEY_DF.select_dtypes(
+        include="datetime").columns}
+)
+
+# Add a random duplicate row into `EXAMPLE_SURVEY_DF`, then sort the index, and reset it
+EXAMPLE_SURVEY_DF = EXAMPLE_SURVEY_DF.append(EXAMPLE_SURVEY_DF.iloc[random.randint(0, example_survey_len)]) \
+    .sort_index() \
+    .reset_index(drop=True)
+
+# Define the changes made to `EXAMPLE_SURVEY_DF` post-execution of the `preprocess_filter_comment_text` function in
+# `create_dataset`
+EXAMPLE_SURVEY_POST_PREPROCESS_DF = EXAMPLE_SURVEY_DF \
+    .assign(Q3_pii_removed=EXAMPLE_SURVEY_DF["Q3_x"],
+            language=["en" if v != "-" else "-" for v in EXAMPLE_SURVEY_DF["Q3_x"].values],
+            is_en=True) \
+    .drop_duplicates(subset=["primary_key"]) \
+    .reset_index(drop=True)
+
+
+# Define the expected output pandas DataFrame from `create_dataset` function
+EXAMPLE_SURVEY_DF_OUTPUT = EXAMPLE_SURVEY_DF.assign(
+    exact_phrases=EXAMPLE_SURVEY_DF["Q3_x"].map(dict(zip(
+        args_extract_phrase_mentions_inputs_q3_x_edit,
+        ["test to see if, this example", "to extract, lemma", "test to see if, this example\nto extract, lemma",
+         "tried to signed up for, advice"]
+    ))),
+    generic_phrases=EXAMPLE_SURVEY_DF["Q3_x"].map(dict(zip(
+        args_extract_phrase_mentions_inputs_q3_x_edit,
+        ["find-smthg, unknown", "unknown, unknown", "find-smthg, unknown\nunknown, unknown", "apply-smthg, information"]
+    )))
+).drop_duplicates(subset=["primary_key"]) \
+    .reset_index(drop=True)
+
+
+@pytest.fixture
+def temp_survey_file(temp_folder, temp_survey_filename):
+    """Create a test survey file within a temporary folder."""
+
+    # Create a filename called `temp_survey_filename`
+    temp_filepath = temp_folder.join(temp_survey_filename)
+
+    # Write a copy `EXAMPLE_SURVEY_DF` to this file
+    EXAMPLE_SURVEY_DF.copy(deep=True).to_csv(temp_filepath, index=False)
+
+    # Return the file path to the temporary survey file
+    return temp_filepath
+
+
+@pytest.fixture
+def temp_cache_pos_file(temp_folder, temp_cache_pos_filename):
+    """Create a file path to for the cached part-of-speech (POS) file."""
+    return temp_folder.join(temp_cache_pos_filename)
+
+
+@pytest.fixture
+def temp_output_file(temp_folder, temp_output_filename):
+    """Create a file path to for the output file."""
+    return temp_folder.join(temp_output_filename)
+
+
+@pytest.fixture
+def patch_pandas_read_csv(mocker):
+    """Patch the pandas.read_csv function."""
+    return mocker.patch("pandas.read_csv", wraps=pd.read_csv)
+
+
+@pytest.fixture
+def patch_drop_duplicate_rows(mocker):
+    """Patch the drop_duplicate_rows function."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.drop_duplicate_rows")
+
+
+@pytest.fixture
+def patch_preprocess_filter_comment_text(mocker):
+    """Patch the preprocess_filter_comment_text function."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.preprocess_filter_comment_text")
+
+
+@pytest.fixture
+def patch_preprocess_part_of_speech_tag(mocker):
+    """Patch the PreProcess.part_of_speech_tag method."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.PreProcess.part_of_speech_tag")
+
+
+@pytest.fixture
+def patch_extract_phrase_mentions(mocker):
+    """Patch the extract_phrase_mentions function."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.extract_phrase_mentions")
+
+
+@pytest.fixture
+def patch_save_intermediate_df(mocker):
+    """Patch the save_intermediate_df function."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.save_intermediate_df")
+
+
+@pytest.fixture
+def patch_create_phrase_level_columns(mocker):
+    """Patch the create_phrase_level_columns function."""
+    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.create_phrase_level_columns")
+
+
+@pytest.fixture
+def resource_create_dataset_integration(temp_survey_file, temp_cache_pos_file, temp_output_file, patch_pandas_read_csv,
+                                        patch_drop_duplicate_rows, patch_preprocess_filter_comment_text,
+                                        patch_preprocess_part_of_speech_tag, patch_extract_phrase_mentions,
+                                        patch_save_intermediate_df, patch_create_phrase_level_columns,
+                                        patch_pandas_dataframe_to_csv):
+    """Resource for the `TestCreateDataset` test for the entire create_dataset function."""
+    return {"temp_survey_file": temp_survey_file, "temp_cache_pos_file": temp_cache_pos_file,
+            "temp_output_file": temp_output_file, "patch_pandas_read_csv": patch_pandas_read_csv,
+            "patch_drop_duplicate_rows": patch_drop_duplicate_rows,
+            "patch_preprocess_filter_comment_text": patch_preprocess_filter_comment_text,
+            "patch_preprocess_part_of_speech_tag": patch_preprocess_part_of_speech_tag,
+            "patch_extract_phrase_mentions": patch_extract_phrase_mentions,
+            "patch_save_intermediate_df": patch_save_intermediate_df,
+            "patch_create_phrase_level_columns": patch_create_phrase_level_columns,
+            "patch_pandas_dataframe_to_csv": patch_pandas_dataframe_to_csv}
+
+
+# Define test file names for the `TestCreateDataset` test class
+args_create_dataset_integration_filenames = [
+    ("hello.csv", "world.csv", "hello_world.csv"),
+    ("foo.csv", "bar.csv", "foobar.csv")
+]
+
+
+@pytest.mark.parametrize("temp_survey_filename, temp_cache_pos_filename, temp_output_filename",
+                         args_create_dataset_integration_filenames)
+class TestCreateDataset:
+
+    def test_pandas_read_csv_called_once_correctly(self, resource_create_dataset_integration):
+        """Test pandas.read_csv method is called once by create_dataset correctly."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Assert `pandas.read_csv` is called once with the correct arguments
+        resource_create_dataset_integration["patch_pandas_read_csv"].assert_called_once_with(
+            resource_create_dataset_integration["temp_survey_file"]
+        )
+
+    def test_drop_duplicate_rows_called_once_correctly(self, resource_create_dataset_integration):
+        """Test drop_duplicate_rows is called once by create_dataset correctly."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Define the function patch under test
+        test_function_patch = resource_create_dataset_integration["patch_drop_duplicate_rows"]
+
+        # Assert `test_function_patch` is called only once
+        test_function_patch.assert_called_once()
+
+        # Get the call arguments from the first and only call
+        test_output_args, test_output_kwargs = test_function_patch.call_args_list[0]
+
+        # Assert there is only one argument, and no keyword arguments
+        assert len(test_output_args) == 1
+        assert not test_output_kwargs
+
+        # Assert the argument is as expected
+        assert_frame_equal(test_output_args[0], EXAMPLE_SURVEY_DF)
+
+    def test_preprocess_filter_comment_text_called_once_correctly(self, resource_create_dataset_integration):
+        """Test preprocess_filter_comment_text is called once by create_dataset correctly."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Assert `preprocess_filter_comment_text` is called once correctly
+        resource_create_dataset_integration["patch_preprocess_filter_comment_text"].assert_called_once_with(
+            resource_create_dataset_integration["patch_drop_duplicate_rows"].return_value
+        )
+
+    def test_preprocess_part_of_speech_tag_called_correctly(self, mocker, resource_create_dataset_integration):
+        """Test PreProcess.part_of_speech_tag method is called by create_dataset correctly."""
+
+        # Set the return value of the `preprocess_filter_comment_text` patch
+        resource_create_dataset_integration["patch_preprocess_filter_comment_text"].return_value = \
+            preprocess_filter_comment_text(drop_duplicate_rows(EXAMPLE_SURVEY_DF.copy(deep=True)))
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Define the function patch under test
+        test_function_patch = resource_create_dataset_integration["patch_preprocess_part_of_speech_tag"]
+
+        # Assert that the `PreProcess.part_of_speech_tag` method was called the correct number of times
+        assert test_function_patch.call_count == len(EXAMPLE_SURVEY_POST_PREPROCESS_DF.query("is_en"))
+
+        # Define the expected call arguments of the `PreProcess.part_of_speech_tag` method
+        test_expected_call_args_list = [
+            mocker.call(v) for v in EXAMPLE_SURVEY_POST_PREPROCESS_DF.query("is_en")["Q3_pii_removed"].values
+        ]
+
+        # Assert that the `PreProcess.part_of_speech_tag` method was called correctly
+        assert test_function_patch.call_args_list == test_expected_call_args_list
+
+    def test_extract_phrase_mentions_called_once_correctly(self, resource_create_dataset_integration):
+        """Test extract_phrase_mentions is called once by create_dataset correctly."""
+
+        # Define how the pandas DataFrame should look after execution of the `preprocess_filter_comment_text`
+        # function, and set this as the return value of the `preprocess_filter_comment_text` patch
+        test_partial_output = preprocess_filter_comment_text(drop_duplicate_rows(EXAMPLE_SURVEY_DF.copy(deep=True)))
+        resource_create_dataset_integration["patch_preprocess_filter_comment_text"].return_value = test_partial_output
+
+        # Set a side effect of the `PreProcess.part_of_speech_tag` method
+        resource_create_dataset_integration["patch_preprocess_part_of_speech_tag"].side_effect = lambda x: x
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Define the function patch under test
+        test_function_patch = resource_create_dataset_integration["patch_extract_phrase_mentions"]
+
+        # Assert that the `extract_phrase_mentions` was called once
+        test_function_patch.assert_called_once()
+
+        # Get the actual call arguments of the first, and only call to `extract_phrase_mentions`
+        test_output_args, test_output_kwargs = test_function_patch.call_args_list[0]
+
+        # Assert that there is only two arguments, and no keyword arguments
+        assert len(test_output_args) == 2
+        assert not test_output_kwargs
+
+        # Define the expected column `Q3_x_edit` of the first call argument of the `extract_phrase_mentions` function
+        test_expected_q3_x_edit = test_partial_output["Q3_x"].replace(np.nan, "") \
+            .map(lambda x: " ".join(re.sub(r"[()\[\]+*]", "", x).split()))
+
+        # Define the expected first call argument of the `extract_phrase_mentions` function
+        test_expected_arg1 = test_partial_output.assign(
+            pos_tag=test_partial_output["Q3_pii_removed"].where(test_partial_output["is_en"], []),
+            Q3_x_edit=test_expected_q3_x_edit
+        )
+
+        # Assert the first argument is as expected, and the second argument is None, as we are using the default
+        # grammar file
+        assert_frame_equal(test_output_args[0], test_expected_arg1)
+        assert test_output_args[1] is None
+
+    def test_save_intermediate_df_called_once_correctly(self, resource_create_dataset_integration):
+        """Test save_intermediate_df is called once by create_dataset correctly."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Assert `save_intermediate_df` is called once with the correct arguments
+        resource_create_dataset_integration["patch_save_intermediate_df"].assert_called_once_with(
+            resource_create_dataset_integration["patch_extract_phrase_mentions"].return_value,
+            resource_create_dataset_integration["temp_cache_pos_file"]
+        )
+
+    def test_create_phrase_level_columns_called_once_correctly(self, resource_create_dataset_integration):
+        """Test create_phrase_level_columns is called once by create_dataset correctly."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(resource_create_dataset_integration["temp_survey_file"], None,
+                       resource_create_dataset_integration["temp_cache_pos_file"],
+                       resource_create_dataset_integration["temp_output_file"])
+
+        # Assert `create_phrase_level_columns` is called once with the correct arguments
+        resource_create_dataset_integration["patch_create_phrase_level_columns"].assert_called_once_with(
+            resource_create_dataset_integration["patch_extract_phrase_mentions"].return_value
+        )
+
+    def test_pandas_dataframe_to_csv_called_once_correctly(self, temp_survey_file, temp_cache_pos_file,
+                                                           temp_output_file, patch_save_intermediate_df,
+                                                           patch_pandas_dataframe_to_csv):
+        """Test pandas.DataFrame.to_csv method is called once by create_dataset correctly."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(temp_survey_file, None, temp_cache_pos_file, temp_output_file)
+
+        # Assert that the `pandas.DataFrame.to_csv` method is called once with the correct arguments
+        patch_pandas_dataframe_to_csv.assert_called_once_with(temp_output_file, index=False)
+
+    def test_create_dataset_returns_correctly(self, temp_survey_file, temp_cache_pos_file, temp_output_file):
+        """Test that the create_dataset function returns the correct output."""
+
+        # Call the `create_dataset` function using the default grammar file
+        create_dataset(temp_survey_file, None, temp_cache_pos_file, temp_output_file)
+
+        # Get the actual CSV output from `create_dataset`, and assert it is as expected
+        assert_frame_equal(pd.read_csv(temp_output_file), EXAMPLE_SURVEY_DF_OUTPUT)
