@@ -692,7 +692,7 @@ EXAMPLE_SURVEY_DF = EXAMPLE_SURVEY_DF.assign(
 )
 
 # Add a random duplicate row into `EXAMPLE_SURVEY_DF`, then sort the index, and reset it
-EXAMPLE_SURVEY_DF = EXAMPLE_SURVEY_DF.append(EXAMPLE_SURVEY_DF.iloc[random.randint(0, example_survey_len)]) \
+EXAMPLE_SURVEY_DF = EXAMPLE_SURVEY_DF.append(EXAMPLE_SURVEY_DF.iloc[random.randrange(0, example_survey_len)]) \
     .sort_index() \
     .reset_index(drop=True)
 
