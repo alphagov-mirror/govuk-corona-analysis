@@ -748,63 +748,38 @@ def temp_output_file(temp_folder, temp_output_filename):
 
 
 @pytest.fixture
-def patch_pandas_read_csv(mocker):
-    """Patch the pandas.read_csv function."""
-    return mocker.patch("pandas.read_csv", wraps=pd.read_csv)
-
-
-@pytest.fixture
-def patch_drop_duplicate_rows(mocker):
-    """Patch the drop_duplicate_rows function."""
-    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.drop_duplicate_rows")
-
-
-@pytest.fixture
-def patch_preprocess_filter_comment_text(mocker):
-    """Patch the preprocess_filter_comment_text function."""
-    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.preprocess_filter_comment_text")
-
-
-@pytest.fixture
-def patch_preprocess_part_of_speech_tag(mocker):
-    """Patch the PreProcess.part_of_speech_tag method."""
-    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.PreProcess.part_of_speech_tag")
-
-
-@pytest.fixture
-def patch_extract_phrase_mentions(mocker):
-    """Patch the extract_phrase_mentions function."""
-    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.extract_phrase_mentions")
-
-
-@pytest.fixture
 def patch_save_intermediate_df(mocker):
     """Patch the save_intermediate_df function."""
     return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.save_intermediate_df")
 
 
 @pytest.fixture
-def patch_create_phrase_level_columns(mocker):
-    """Patch the create_phrase_level_columns function."""
-    return mocker.patch("src.make_feedback_tool_data.make_data_for_feedback_tool.create_phrase_level_columns")
-
-
-@pytest.fixture
-def resource_create_dataset_integration(temp_survey_file, temp_cache_pos_file, temp_output_file, patch_pandas_read_csv,
-                                        patch_drop_duplicate_rows, patch_preprocess_filter_comment_text,
-                                        patch_preprocess_part_of_speech_tag, patch_extract_phrase_mentions,
-                                        patch_save_intermediate_df, patch_create_phrase_level_columns,
-                                        patch_pandas_dataframe_to_csv):
+def resource_create_dataset_integration(mocker, temp_survey_file, temp_cache_pos_file, temp_output_file,
+                                        patch_save_intermediate_df, patch_pandas_dataframe_to_csv):
     """Resource for the `TestCreateDataset` test for the entire create_dataset function."""
+
+    # Patch the `pandas.read_csv` method, and wrap `pandas.read_csv` as well
+    patch_pandas_read_csv = mocker.patch("pandas.read_csv", wraps=pd.read_csv)
+
+    # Define a list of function names from `src.make_feedback_tool_data.make_data_for_feedback_tool` that need to be
+    # patched
+    patch_function_names = ["drop_duplicate_rows", "preprocess_filter_comment_text", "PreProcess.part_of_speech_tag",
+                            "extract_phrase_mentions", "create_phrase_level_columns"]
+
+    # Initialise a storing variable
+    patch_dict = {}
+
+    # Patch the functions listed in `patch_function_names`; the keys will be lowercase entries of
+    # `patch_function_names` with any periods replaced with underscores
+    for n in patch_function_names:
+        patch_function = mocker.patch(f"src.make_feedback_tool_data.make_data_for_feedback_tool.{n}")
+        patch_dict[f"patch_{n.replace('.', '_').lower()}"] = patch_function
+
+    # Return a dictionary containing all necessary patches for tests in the `TestCreateDataset` test class
     return {"temp_survey_file": temp_survey_file, "temp_cache_pos_file": temp_cache_pos_file,
             "temp_output_file": temp_output_file, "patch_pandas_read_csv": patch_pandas_read_csv,
-            "patch_drop_duplicate_rows": patch_drop_duplicate_rows,
-            "patch_preprocess_filter_comment_text": patch_preprocess_filter_comment_text,
-            "patch_preprocess_part_of_speech_tag": patch_preprocess_part_of_speech_tag,
-            "patch_extract_phrase_mentions": patch_extract_phrase_mentions,
             "patch_save_intermediate_df": patch_save_intermediate_df,
-            "patch_create_phrase_level_columns": patch_create_phrase_level_columns,
-            "patch_pandas_dataframe_to_csv": patch_pandas_dataframe_to_csv}
+            "patch_pandas_dataframe_to_csv": patch_pandas_dataframe_to_csv, **patch_dict}
 
 
 # Define test file names for the `TestCreateDataset` test class
