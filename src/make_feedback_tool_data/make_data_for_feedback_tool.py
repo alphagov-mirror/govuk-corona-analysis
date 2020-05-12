@@ -19,7 +19,7 @@ logging.config.fileConfig(log_file_path)
 logger = logging.getLogger(__name__)
 
 
-def preproccess_filter_comment_text(full_df, length_threshold=4000):
+def preprocess_filter_comment_text(full_df, length_threshold=4000):
     """Filter down survey feedback to only english and len < 4K char comments.
     :param full_df:
     :param length_threshold:
@@ -137,7 +137,7 @@ def create_dataset(survey_filename, grammar_filename, cache_pos_filename, output
 
     drop_duplicate_rows(survey_data_df)
 
-    survey_data_df = preproccess_filter_comment_text(survey_data_df)
+    survey_data_df = preprocess_filter_comment_text(survey_data_df)
 
     logger.info("Part of speech tagging comments...")
     survey_data_df['pos_tag'] = survey_data_df[['Q3_pii_removed', 'is_en']].progress_apply(

@@ -3,7 +3,7 @@ from src.make_feedback_tool_data.make_data_for_feedback_tool import (
     create_phrase_level_columns,
     drop_duplicate_rows,
     extract_phrase_mentions,
-    preproccess_filter_comment_text,
+    preprocess_filter_comment_text,
     save_intermediate_df
 )
 from src.make_feedback_tool_data.preprocess import PreProcess
@@ -54,13 +54,13 @@ def patch_preprocess_detect_language(mocker):
 class TestPreProcessFilterCommentText:
 
     def test_returns_correctly(self, patch_preprocess_pii_regex, test_input_threshold):
-        """Test that the preproccess_filter_comment_text function returns the correct output."""
+        """Test that the preprocess_filter_comment_text function returns the correct output."""
 
         # Define the expected output
         test_expected = DF_EXAMPLE_PRE_PROCESSED.query(f"Q3_pii_removed.str.len() < {test_input_threshold}")
 
-        # Call the `preproccess_filter_comment_text` function
-        test_output = preproccess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
+        # Call the `preprocess_filter_comment_text` function
+        test_output = preprocess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
 
         # Assert the same columns exist in both
         assert set(test_output.columns) == set(test_expected.columns)
@@ -69,30 +69,30 @@ class TestPreProcessFilterCommentText:
         assert_frame_equal(test_output, test_expected)
 
     def test_preprocess_replace_pii_regex_call_count(self, patch_preprocess_pii_regex, test_input_threshold):
-        """Test that preproccess_filter_comment_text calls PreProcess.replace_pii_regex the correct number of times."""
+        """Test that preprocess_filter_comment_text calls PreProcess.replace_pii_regex the correct number of times."""
 
-        # Call the `preproccess_filter_comment_text` function
-        _ = preproccess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
+        # Call the `preprocess_filter_comment_text` function
+        _ = preprocess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
 
         # Assert that `PreProcess.replace_pii_regex` is called the correct number of times
         assert patch_preprocess_pii_regex.call_count == len(DF_EXAMPLE_RAW)
 
     def test_preprocess_replace_pii_regex_called_correctly(self, mocker, patch_preprocess_pii_regex,
                                                            test_input_threshold):
-        """Test that preproccess_filter_comment_text calls PreProcess.replace_pii_regex with the correct arguments."""
+        """Test that preprocess_filter_comment_text calls PreProcess.replace_pii_regex with the correct arguments."""
 
-        # Call the `preproccess_filter_comment_text` function
-        _ = preproccess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
+        # Call the `preprocess_filter_comment_text` function
+        _ = preprocess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
 
         # Assert that `PreProcess.replace_pii_regex` is called with the correct arguments
         assert patch_preprocess_pii_regex.call_args_list == [mocker.call(v) for v in DF_EXAMPLE_RAW["Q3_x"]]
 
     def test_preprocess_detect_language_call_count(self, patch_preprocess_pii_regex, patch_preprocess_detect_language,
                                                    test_input_threshold):
-        """Test that preproccess_filter_comment_text calls PreProcess.detect_language the correct number of times."""
+        """Test that preprocess_filter_comment_text calls PreProcess.detect_language the correct number of times."""
 
-        # Call the `preproccess_filter_comment_text` function
-        _ = preproccess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
+        # Call the `preprocess_filter_comment_text` function
+        _ = preprocess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
 
         # Get the expected call count
         test_expected = DF_EXAMPLE_RAW \
@@ -105,10 +105,10 @@ class TestPreProcessFilterCommentText:
 
     def test_preprocess_detect_language_called_correctly(self, mocker, patch_preprocess_pii_regex,
                                                          patch_preprocess_detect_language, test_input_threshold):
-        """Test that preproccess_filter_comment_text calls PreProcess.detect_language with the correct arguments."""
+        """Test that preprocess_filter_comment_text calls PreProcess.detect_language with the correct arguments."""
 
-        # Call the `preproccess_filter_comment_text` function
-        _ = preproccess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
+        # Call the `preprocess_filter_comment_text` function
+        _ = preprocess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
 
         # Define the expected values of the call arguments
         text_expected_values = DF_EXAMPLE_RAW \
