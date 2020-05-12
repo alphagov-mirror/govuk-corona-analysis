@@ -2,7 +2,7 @@ from difflib import SequenceMatcher as SM
 from nltk import sent_tokenize
 from nltk.util import ngrams
 from tqdm import tqdm
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 import re
 import spacy
 import sys
@@ -99,7 +99,7 @@ class PreProcess:
             return "-"
 
     @staticmethod
-    def compute_combinations(items: List[List[Any]], n: int) -> List[List[Any]]:
+    def compute_combinations(items: List[Union[List[Any], Tuple]], n: int) -> List[List[Any]]:
         """Create list chunks from a nested list of items using a moving window of a set size n.
 
         See Example for further details.
