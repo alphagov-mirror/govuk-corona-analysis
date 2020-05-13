@@ -1,6 +1,6 @@
-from src.make_feedback_tool_data.preprocess import PreProcess
-from src.make_feedback_tool_data.regex_category_identification import regex_for_theme, regex_group_verbs
-from src.make_feedback_tool_data.text_chunking import ChunkParser
+from preprocess import PreProcess
+from regex_category_identification import regex_for_theme, regex_group_verbs
+from text_chunking import ChunkParser
 from tqdm import tqdm
 from typing import Optional
 import logging.config
@@ -257,7 +257,6 @@ def create_dataset(survey_filename: str, grammar_filename: str, cache_pos_filena
 
 
 if __name__ == "__main__":
-
     # Get environment variables
     DATA_DIR = os.getenv("DIR_DATA")
 

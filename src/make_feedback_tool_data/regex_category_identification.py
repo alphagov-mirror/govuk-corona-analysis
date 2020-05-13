@@ -4,7 +4,7 @@ import re
 import yaml
 
 # Get the folder path to the `data` folder, and the name of the expected YAML files
-DIR_DATA = os.environ.get("DIR_DATA")
+DIR_DATA = os.getenv("DIR_DATA")
 FILE_REGEX_THEMES = "regex_for_theme.yaml"
 FILE_REGEX_GROUP_VERBS = "regex_group_verbs.yaml"
 
