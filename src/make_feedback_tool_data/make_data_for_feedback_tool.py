@@ -1,6 +1,6 @@
-from preprocess import PreProcess
-from regex_categorisation import regex_for_theme, regex_group_verbs
-from text_chunking import ChunkParser
+from src.make_feedback_tool_data.preprocess import PreProcess
+from src.make_feedback_tool_data.regex_categorisation import regex_for_theme, regex_group_verbs
+from src.make_feedback_tool_data.text_chunking import ChunkParser
 from tqdm import tqdm
 from typing import Optional
 import logging.config
