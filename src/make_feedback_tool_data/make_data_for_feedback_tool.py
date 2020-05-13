@@ -174,7 +174,7 @@ def create_phrase_level_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Create exact and generic phrase mention columns, based on verb-like phrase mentions only.
 
     :param df: A pandas DataFrame containing at least a column `themed_phrase_mentions`. See
-        src.make_feedback_tool_data.make_data_for_feedback_tool.extract_phrase_mentions.
+        src.make_feedback_tool_data.extract_phrase_mentions.
     :return: `df` with additional columns for exact and generic phrase mentions.
 
     """
