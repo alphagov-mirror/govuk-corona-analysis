@@ -15,6 +15,7 @@ certifi==2020.4.5.1
 cfgv==3.1.0
 chardet==3.0.4
 click==7.1.1
+commonmark==0.9.1
 conllu==1.3.1
 coverage==5.1
 cycler==0.10.0
@@ -59,6 +60,7 @@ jupyter-client==6.1.3
 jupyter-console==6.1.0
 jupyter-core==4.6.3
 kiwisolver==1.2.0
+Markdown==3.2.2
 MarkupSafe==1.1.1
 matplotlib==3.2.1
 mistune==0.8.4
@@ -109,6 +111,7 @@ PyYAML==5.3.1
 pyzmq==19.0.0
 qtconsole==4.7.2
 QtPy==1.9.0
+recommonmark==0.6.0
 regex==2020.4.4
 requests==2.23.0
 responses==0.10.12
@@ -123,6 +126,7 @@ six==1.14.0
 snowballstemmer==2.0.0
 spacy==2.2.4
 Sphinx==3.0.2
+sphinx-markdown-tables==0.0.14
 sphinxcontrib-applehelp==1.0.2
 sphinxcontrib-devhelp==1.0.2
 sphinxcontrib-htmlhelp==1.0.3
