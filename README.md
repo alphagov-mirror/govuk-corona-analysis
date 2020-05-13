@@ -221,4 +221,6 @@ coverage run -m pytest
 coverage html
 ```
 
+Once complete, you can view the coverage report in your local browser at [`htmlcov/index.html`](htmlcov/index.html).
+
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
