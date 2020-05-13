@@ -136,6 +136,20 @@ Finalise the installation by setting up the pre-commit hooks whenever code is pu
 pre-commit install -t pre-push
 ```
 
+## Building and viewing documentation
+
+The documentation for this project is build using Sphinx, and resides in the `docs` folder. To generate a copy of the
+documentation locally, in your terminal from the top-level of this repository run the following commands:
+
+```shell script
+cd docs
+make clean
+make html
+```
+
+Use the same commands to rebuild your documentation if there are any updates. Once built, the documentation can be
+view in your local browser at [`docs/_build/html/index.html`](docs/_build/html/index.html).
+
 ##  Pre-commit hooks
 
 
@@ -206,5 +220,7 @@ To view the test coverage within the `src` folder as a HTML report, run the foll
 coverage run -m pytest
 coverage html
 ```
+
+Once complete, you can view the coverage report in your local browser at [`htmlcov/index.html`](htmlcov/index.html).
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
