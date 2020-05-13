@@ -1,4 +1,4 @@
-from src.make_feedback_tool_data.regex_category_identification import (
+from src.make_feedback_tool_data.regex_categorisation import (
     regex_category_identification,
     regex_group_verbs,
     regex_for_theme
@@ -86,7 +86,7 @@ class TestThemeIdentification:
 
         # Patch the `regex_category_identification` function
         patch_regex_category_identification = mocker.patch(
-            "src.make_feedback_tool_data.regex_category_identification.regex_category_identification"
+            "src.make_feedback_tool_data.regex_categorisation.regex_category_identification"
         )
 
         # Call `regex_for_theme`
@@ -117,7 +117,7 @@ class TestGroupVerbsIdentification:
 
         # Patch the `regex_category_identification` function
         patch_regex_category_identification = mocker.patch(
-            "src.make_feedback_tool_data.regex_category_identification.regex_category_identification"
+            "src.make_feedback_tool_data.regex_categorisation.regex_category_identification"
         )
 
         # Call `regex_group_verbs`
