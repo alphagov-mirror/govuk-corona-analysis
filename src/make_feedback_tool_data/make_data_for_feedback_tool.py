@@ -7,10 +7,14 @@ import logging.config
 import os
 import nltk
 import numpy as np
+import argparse
 import pandas as pd
 import re
 
-nltk.download("punkt")
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
 # Set up a logger
 log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logging.conf")
@@ -262,11 +266,30 @@ if __name__ == "__main__":
     # Get environment variables
     DATA_DIR = os.getenv("DIR_DATA")
 
-    # Define paths to various files
-    survey_data_filename = os.path.join(DATA_DIR, "Step5_all_cols_UIS_April1toMay14.csv")
-    chunk_grammar_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grammar.txt")
-    cache_pos_data_filename = survey_data_filename.replace(".csv", "_cache.csv")
-    output_data_filename = survey_data_filename.replace(".csv", "_exact_generic_phrases.csv")
+    parser = argparse.ArgumentParser(description='Detect and extract phrases from survey feedback based on their '
+                                                 'syntactic structure.')
+    parser.add_argument('--filename', "-f", default="",
+                        help="Survey data filename. If empty or doesn't exist, use most recently created survey file "
+                             "in /data.")
 
-    # Execute the `create_dataset` function
-    create_dataset(survey_data_filename, chunk_grammar_filename, cache_pos_data_filename, output_data_filename)
+    args = parser.parse_args()
+
+    if args.filename == "":
+        files = os.listdir(DATA_DIR)
+        paths = [os.path.join(DATA_DIR, basename) for basename in files if all([exclude not in basename for
+                                                                                exclude in ["cache", "exact"]])]
+        survey_data_filename = max(paths, key=os.path.getctime)
+        logger.debug(f"No filename specified, using most recently added...")
+    else:
+        survey_data_filename = os.path.join(DATA_DIR, f"{args.filename}.csv")
+
+    if os.path.isfile(survey_data_filename):
+        # Define paths to various files
+        chunk_grammar_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grammar.txt")
+        cache_pos_data_filename = survey_data_filename.replace(".csv", "_cache.csv")
+        output_data_filename = survey_data_filename.replace(".csv", "_exact_generic_phrases.csv")
+
+        # Execute the `create_dataset` function
+        create_dataset(survey_data_filename, chunk_grammar_filename, cache_pos_data_filename, output_data_filename)
+    else:
+        logger.error(f"Specified filename does not exist: {survey_data_filename}")
