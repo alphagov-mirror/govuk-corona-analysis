@@ -279,7 +279,7 @@ if __name__ == "__main__":
         paths = [os.path.join(DATA_DIR, basename) for basename in files if all([exclude not in basename for
                                                                                 exclude in ["cache", "exact"]])]
         survey_data_filename = max(paths, key=os.path.getctime)
-        logger.debug(f"No filename specified, using most recently added...")
+        logger.debug("No filename specified, using most recently added...")
     else:
         survey_data_filename = os.path.join(DATA_DIR, f"{args.filename}.csv")
 
