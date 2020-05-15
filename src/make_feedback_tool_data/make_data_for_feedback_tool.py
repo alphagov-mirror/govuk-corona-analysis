@@ -35,8 +35,9 @@ def drop_duplicate_rows(df: pd.DataFrame) -> pd.DataFrame:
     logger.info("Dropping duplicates...")
 
     # Drop the duplicates using the `primary_key` column, and reset the index
-    df_out = df.drop_duplicates("primary_key").reset_index(drop=True)
-    logger.info(f"Dropped {loaded_number_rows - df.shape[0]} rows.")
+    duplicate_key = "primary_key"
+    df_out = df.drop_duplicates(duplicate_key).reset_index(drop=True)
+    logger.info(f"Dropped {loaded_number_rows - df_out.shape[0]} rows based on column {duplicate_key}.")
 
     # Return the de-duplicated pandas DataFrame
     return df_out
@@ -48,8 +49,8 @@ def preprocess_filter_comment_text(df: pd.DataFrame, length_threshold: int = 400
     Also removes personally identifiable information (PII) from the text, according to the
     `PreProcess.replace_pii_regex` method.
 
-    :param df: A pandas DataFrame with a text column `Q3_x` for filtering.
-    :param length_threshold: Default: 4000. The maximum number of characters any text within `Q3_x` of `df` can have
+    :param df: A pandas DataFrame with a text column `Q3` for filtering.
+    :param length_threshold: Default: 4000. The maximum number of characters any text within `Q3` of `df` can have
         - only rows less than this character limit are retained. All others are filtered out.
     :return: A pandas DataFrame with PII removed, and only English text below the character length threshold.
 
@@ -58,7 +59,7 @@ def preprocess_filter_comment_text(df: pd.DataFrame, length_threshold: int = 400
 
     # Remove any personally identifiable information (PII), and filter out any rows were the text length is greater than
     # or equal to `length_threshold`
-    out_df = df.assign(Q3_pii_removed=df["Q3_x"].progress_map(PreProcess.replace_pii_regex)) \
+    out_df = df.assign(Q3_pii_removed=df["Q3"].progress_map(PreProcess.replace_pii_regex)) \
         .query(f"Q3_pii_removed.str.len() < {length_threshold}")
 
     # Detect the language of each row of PII-removed text
@@ -104,7 +105,7 @@ def extract_phrase_mentions(df: pd.DataFrame, grammar_filename: Optional[str] = 
     parser = ChunkParser(grammar_filename)
 
     # Iterate through the comments and the POS tagged text
-    for comment, vals in tqdm(df[["Q3_x_edit", "pos_tag"]].values):
+    for comment, vals in tqdm(df[["Q3_edit", "pos_tag"]].values):
 
         # Extract phrase mentions, and combine similar phrases together
         sents = parser.extract_phrase(vals, merge_inplace=True)
@@ -230,9 +231,9 @@ def create_dataset(survey_filename: str, grammar_filename: str, cache_pos_filena
 
     # Replace NaN values, and pre-process the feedback text
     logger.info("Pre-processing feedback text for matching...")
-    survey_data_df = survey_data_df.assign(Q3_x_edit=survey_data_df["Q3_x"].replace(np.nan, "", regex=True))
+    survey_data_df = survey_data_df.assign(Q3_edit=survey_data_df["Q3"].replace(np.nan, "", regex=True))
     survey_data_df = survey_data_df.assign(
-        Q3_x_edit=survey_data_df["Q3_x_edit"].progress_map(lambda x: " ".join(re.sub(r"[()\[\]+*]", "", x).split()))
+        Q3_edit=survey_data_df["Q3_edit"].progress_map(lambda x: " ".join(re.sub(r"[()\[\]+*]", "", x).split()))
     )
 
     # Extract the phrase mentions
@@ -244,8 +245,8 @@ def create_dataset(survey_filename: str, grammar_filename: str, cache_pos_filena
     # Create phrase-level columns
     survey_data_df = create_phrase_level_columns(survey_data_df)
 
-    # Overwrite the `Q3_x` column with `Q3_x_edit`
-    survey_data_df = survey_data_df.assign(Q3_x=survey_data_df["Q3_x_edit"])
+    # Overwrite the `Q3` column with `Q3_edit`
+    survey_data_df = survey_data_df.assign(Q3=survey_data_df["Q3_edit"])
 
     # Define the columns to keep - all the original columns in `df`, but also the `exact_phrases`,
     # and `generic_phrases` columns
@@ -253,6 +254,7 @@ def create_dataset(survey_filename: str, grammar_filename: str, cache_pos_filena
 
     # Output the file to a CSV; only output the same columns as defined in `columns_to_keep`
     logger.info(f"Saving survey data at: {output_filename}...")
+    logger.debug(f"Keeping columns: {df.columns}...")
     survey_data_df[columns_to_keep].to_csv(output_filename, index=False)
 
 
@@ -261,10 +263,11 @@ if __name__ == "__main__":
     DATA_DIR = os.getenv("DIR_DATA")
 
     # Define paths to various files
-    survey_data_filename = os.path.join(DATA_DIR, "uis_20200401_20200409.csv")
+    survey_data_filename = os.path.join(DATA_DIR, "Step5_all_cols_UIS_April1toMay14.csv")
     chunk_grammar_filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grammar.txt")
     cache_pos_data_filename = survey_data_filename.replace(".csv", "_cache.csv")
     output_data_filename = survey_data_filename.replace(".csv", "_exact_generic_phrases.csv")
+
 
     # Execute the `create_dataset` function
     create_dataset(survey_data_filename, chunk_grammar_filename, cache_pos_data_filename, output_data_filename)
