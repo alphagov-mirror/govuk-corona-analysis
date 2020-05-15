@@ -23,7 +23,7 @@ random.seed(42)
 # Create an example pandas DataFrame of data
 DF_EXAMPLE_RAW = pd.DataFrame.from_dict({
     "primary_key": [*range(7)],
-    "Q3_x": [
+    "Q3": [
         "", "-", "These words are in English.", "Cet mots sont en français.",
         "This is in English, but there is a word here in اَلْعَرَبِيَّةُ",
         "Η Βικιπαίδεια είναι διεθνής, παγκόσμια, ψηφιακή, διαδικτυακή, ελεύθερου περιεχομένου, εγκυκλοπαίδεια, που "
@@ -39,7 +39,7 @@ EXAMPLE_PII_REGEX = r"(English)|(World Wide Web)|(mots)"
 
 # Create a pre-processed version of `DF_EXAMPLE`
 DF_EXAMPLE_PRE_PROCESSED = DF_EXAMPLE_RAW \
-    .assign(Q3_pii_removed=DF_EXAMPLE_RAW["Q3_x"].str.replace(EXAMPLE_PII_REGEX, ""),
+    .assign(Q3_pii_removed=DF_EXAMPLE_RAW["Q3"].str.replace(EXAMPLE_PII_REGEX, ""),
             language=["un", "-", "en", "fr", "en", "el", "zh"],
             is_en=[True, True, True, False, True, False, False]) \
     .query("is_en")
@@ -92,7 +92,7 @@ class TestPreProcessFilterCommentText:
         _ = preprocess_filter_comment_text(DF_EXAMPLE_RAW, test_input_threshold)
 
         # Assert that `PreProcess.replace_pii_regex` is called with the correct arguments
-        assert patch_preprocess_pii_regex.call_args_list == [mocker.call(v) for v in DF_EXAMPLE_RAW["Q3_x"]]
+        assert patch_preprocess_pii_regex.call_args_list == [mocker.call(v) for v in DF_EXAMPLE_RAW["Q3"]]
 
     def test_preprocess_detect_language_call_count(self, patch_preprocess_pii_regex, patch_preprocess_detect_language,
                                                    test_input_threshold):
@@ -103,7 +103,7 @@ class TestPreProcessFilterCommentText:
 
         # Get the expected call count
         test_expected = DF_EXAMPLE_RAW \
-            .assign(Q3_pii_removed=DF_EXAMPLE_RAW["Q3_x"].str.replace(EXAMPLE_PII_REGEX, "")) \
+            .assign(Q3_pii_removed=DF_EXAMPLE_RAW["Q3"].str.replace(EXAMPLE_PII_REGEX, "")) \
             .query(f"Q3_pii_removed.str.len() < {test_input_threshold}") \
             .shape[0]
 
@@ -119,7 +119,7 @@ class TestPreProcessFilterCommentText:
 
         # Define the expected values of the call arguments
         text_expected_values = DF_EXAMPLE_RAW \
-            .assign(Q3_pii_removed=DF_EXAMPLE_RAW["Q3_x"].str.replace(EXAMPLE_PII_REGEX, "")) \
+            .assign(Q3_pii_removed=DF_EXAMPLE_RAW["Q3"].str.replace(EXAMPLE_PII_REGEX, "")) \
             .query(f"Q3_pii_removed.str.len() < {test_input_threshold}") \
             .Q3_pii_removed \
             .to_list()
@@ -234,7 +234,7 @@ class TestSaveIntermediateDf:
 
 
 # Define the example feedback that would result in `args_save_intermediate_df_inputs`
-args_extract_phrase_mentions_inputs_q3_x_edit = [
+args_extract_phrase_mentions_inputs_q3_edit = [
     "I am going to go and test to see if this example is correct.",
     "If this test passes, we should be able to extract lemma and words.",
     "I am going to go and test to see if this example is correct. If this test passes, we should be able to extract "
@@ -245,10 +245,10 @@ args_extract_phrase_mentions_inputs_q3_x_edit = [
 
 
 # Define the inputs for the `extract_phrase_mentions` tests, where each tuple is a pandas DataFrame with columns
-# 'Q3_x_edit' and 'pos_tag'
+# 'Q3_edit' and 'pos_tag'
 args_extract_phrase_mentions_integration = [
-    pd.DataFrame({"Q3_x_edit": t, **i}) for t, i in zip(args_extract_phrase_mentions_inputs_q3_x_edit,
-                                                        args_save_intermediate_df_inputs)
+    pd.DataFrame({"Q3_edit": t, **i}) for t, i in zip(args_extract_phrase_mentions_inputs_q3_edit,
+                                                      args_save_intermediate_df_inputs)
 ]
 
 
@@ -542,7 +542,7 @@ Faker.seed(42)
 fake = Faker("en_GB")
 
 # Define the number of rows of data to create in the example survey data
-example_survey_len = len(args_extract_phrase_mentions_inputs_q3_x_edit) + 1
+example_survey_len = len(args_extract_phrase_mentions_inputs_q3_edit) + 1
 
 # Create some example data for a few columns that will be manipulated by the `create_dataset` function; note all
 # entries here are randomly generated, and do not represent real data except in formatting
@@ -554,15 +554,15 @@ EXAMPLE_SURVEY_DICT = {
     "hits_pagePath": [f"/{fake.slug()}" for _ in range(example_survey_len)],
     "Started": [fake.date_time_this_month() for _ in range(example_survey_len)],
     "Ended": None,
-    "Q1_x": random.choices(["Personal", "Professional", "-"], k=example_survey_len),
-    "Q2_x": [fake.job() for _ in range(example_survey_len)],
-    "Q3_x": random.sample([*args_extract_phrase_mentions_inputs_q3_x_edit, "-"], example_survey_len),
-    "Q4_x": random.choices(["Yes", "Not sure / Not yet", "No", "-"], k=example_survey_len),
-    "Q5_x": random.choices(["Very satisfied", "Satisfied", "Neither satisfied nor dissatisfied", "Dissatisfied",
-                            "Not at all satisfied", "-"], k=example_survey_len),
-    "Q6_x": random.choices(["Yes", "No", "-"], k=example_survey_len),
-    "Q7_x": random.choices(["-"] + [fake.sentence() for _ in range(9)], weights=[55] + [5] * 9, k=example_survey_len),
-    "Q8_x": random.choices(["-"] + [fake.paragraph() for _ in range(9)], weights=[55] + [5] * 9, k=example_survey_len),
+    "Q1": random.choices(["Personal", "Professional", "-"], k=example_survey_len),
+    "Q2": [fake.job() for _ in range(example_survey_len)],
+    "Q3": random.sample([*args_extract_phrase_mentions_inputs_q3_edit, "-"], example_survey_len),
+    "Q4": random.choices(["Yes", "Not sure / Not yet", "No", "-"], k=example_survey_len),
+    "Q5": random.choices(["Very satisfied", "Satisfied", "Neither satisfied nor dissatisfied", "Dissatisfied",
+                          "Not at all satisfied", "-"], k=example_survey_len),
+    "Q6": random.choices(["Yes", "No", "-"], k=example_survey_len),
+    "Q7": random.choices(["-"] + [fake.sentence() for _ in range(9)], weights=[55] + [5] * 9, k=example_survey_len),
+    "Q8": random.choices(["-"] + [fake.paragraph() for _ in range(9)], weights=[55] + [5] * 9, k=example_survey_len),
     "session_id": None,
     "dayofweek": None,
     "isWeekend": None,
@@ -658,14 +658,14 @@ EXAMPLE_SURVEY_DICT.update({
     "ga_visit_end_timestamp": [dt - timedelta(minutes=random.randint(5, 59)) for dt in EXAMPLE_SURVEY_DICT["Started"]],
     "intents_started_date": [int(dt.strftime("%Y%m%d")) for dt in EXAMPLE_SURVEY_DICT["Started"]],
     "search_terms_sequence": ["+".join(s) for s in EXAMPLE_SURVEY_DICT["cleaned_search_terms_sequence"]],
-    "Q1_y": EXAMPLE_SURVEY_DICT["Q1_x"],
-    "Q2_y": EXAMPLE_SURVEY_DICT["Q2_x"],
-    "Q3_y": EXAMPLE_SURVEY_DICT["Q3_x"],
-    "Q4_y": EXAMPLE_SURVEY_DICT["Q4_x"],
-    "Q5_y": EXAMPLE_SURVEY_DICT["Q5_x"],
-    "Q6_y": EXAMPLE_SURVEY_DICT["Q6_x"],
-    "Q7_y": EXAMPLE_SURVEY_DICT["Q7_x"],
-    "Q8_y": EXAMPLE_SURVEY_DICT["Q8_x"],
+    "Q1_y": EXAMPLE_SURVEY_DICT["Q1"],
+    "Q2_y": EXAMPLE_SURVEY_DICT["Q2"],
+    "Q3_y": EXAMPLE_SURVEY_DICT["Q3"],
+    "Q4_y": EXAMPLE_SURVEY_DICT["Q4"],
+    "Q5_y": EXAMPLE_SURVEY_DICT["Q5"],
+    "Q6_y": EXAMPLE_SURVEY_DICT["Q6"],
+    "Q7_y": EXAMPLE_SURVEY_DICT["Q7"],
+    "Q8_y": EXAMPLE_SURVEY_DICT["Q8"],
     "Started_Date": [int(dt.strftime("%Y%m%d")) for dt in EXAMPLE_SURVEY_DICT["Started"]],
     "Started_Date_sub_12h": [int((dt - timedelta(hours=12)).strftime("%Y%m%d"))
                              for dt in EXAMPLE_SURVEY_DICT["Started"]]
@@ -699,8 +699,8 @@ EXAMPLE_SURVEY_DF = EXAMPLE_SURVEY_DF.append(EXAMPLE_SURVEY_DF.iloc[random.randr
 # Define the changes made to `EXAMPLE_SURVEY_DF` post-execution of the `preprocess_filter_comment_text` function in
 # `create_dataset`
 EXAMPLE_SURVEY_POST_PREPROCESS_DF = EXAMPLE_SURVEY_DF \
-    .assign(Q3_pii_removed=EXAMPLE_SURVEY_DF["Q3_x"],
-            language=["en" if v != "-" else "-" for v in EXAMPLE_SURVEY_DF["Q3_x"].values],
+    .assign(Q3_pii_removed=EXAMPLE_SURVEY_DF["Q3"],
+            language=["en" if v != "-" else "-" for v in EXAMPLE_SURVEY_DF["Q3"].values],
             is_en=True) \
     .drop_duplicates(subset=["primary_key"]) \
     .reset_index(drop=True)
@@ -708,13 +708,13 @@ EXAMPLE_SURVEY_POST_PREPROCESS_DF = EXAMPLE_SURVEY_DF \
 
 # Define the expected output pandas DataFrame from `create_dataset` function
 EXAMPLE_SURVEY_DF_OUTPUT = EXAMPLE_SURVEY_DF.assign(
-    exact_phrases=EXAMPLE_SURVEY_DF["Q3_x"].map(dict(zip(
-        args_extract_phrase_mentions_inputs_q3_x_edit,
+    exact_phrases=EXAMPLE_SURVEY_DF["Q3"].map(dict(zip(
+        args_extract_phrase_mentions_inputs_q3_edit,
         ["test to see if, this example", "to extract, lemma", "test to see if, this example\nto extract, lemma",
          "tried to signed up for, advice"]
     ))),
-    generic_phrases=EXAMPLE_SURVEY_DF["Q3_x"].map(dict(zip(
-        args_extract_phrase_mentions_inputs_q3_x_edit,
+    generic_phrases=EXAMPLE_SURVEY_DF["Q3"].map(dict(zip(
+        args_extract_phrase_mentions_inputs_q3_edit,
         ["find-smthg, unknown", "unknown, unknown", "find-smthg, unknown\nunknown, unknown", "apply-smthg, information"]
     )))
 ).drop_duplicates(subset=["primary_key"]) \
@@ -898,14 +898,14 @@ class TestCreateDataset:
         assert len(test_output_args) == 2
         assert not test_output_kwargs
 
-        # Define the expected column `Q3_x_edit` of the first call argument of the `extract_phrase_mentions` function
-        test_expected_q3_x_edit = test_partial_output["Q3_x"].replace(np.nan, "") \
+        # Define the expected column `Q3_edit` of the first call argument of the `extract_phrase_mentions` function
+        test_expected_q3_edit = test_partial_output["Q3"].replace(np.nan, "") \
             .map(lambda x: " ".join(re.sub(r"[()\[\]+*]", "", x).split()))
 
         # Define the expected first call argument of the `extract_phrase_mentions` function
         test_expected_arg1 = test_partial_output.assign(
             pos_tag=test_partial_output["Q3_pii_removed"].where(test_partial_output["is_en"], []),
-            Q3_x_edit=test_expected_q3_x_edit
+            Q3_edit=test_expected_q3_edit
         )
 
         # Assert the first argument is as expected, and the second argument is None, as we are using the default
