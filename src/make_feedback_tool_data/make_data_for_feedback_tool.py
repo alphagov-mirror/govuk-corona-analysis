@@ -268,12 +268,5 @@ if __name__ == "__main__":
     cache_pos_data_filename = survey_data_filename.replace(".csv", "_cache.csv")
     output_data_filename = survey_data_filename.replace(".csv", "_exact_generic_phrases.csv")
 
-
     # Execute the `create_dataset` function
     create_dataset(survey_data_filename, chunk_grammar_filename, cache_pos_data_filename, output_data_filename)
-    # parser = ChunkParser(chunk_grammar_filename)
-    # comment = "This is an example sentence. This is another."
-    # tagged = PreProcess.part_of_speech_tag(comment)
-    # for sent in parser.extract_phrase(tagged, merge_inplace=True):
-    #     for chunk in sent:
-    #         print(chunk.text, chunk.label)
