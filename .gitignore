@@ -70,6 +70,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/api/
 
 # PyBuilder
 target/
@@ -136,7 +137,11 @@ dmypy.json
 .idea
 
 # Ignore the `data` folder
-data/
+data/*
+
+# Track the `regex_for_theme.yaml`, and `regex_group_verbs` files
+!data/regex_for_theme.yaml
+!data/regex_group_verbs.yaml
 
 # Ignore the `.secrets` file
 .secrets

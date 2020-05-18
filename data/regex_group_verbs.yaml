@@ -1,0 +1,18 @@
+find-smthg: (f(i|(ou))nd)|(look)|(search)|(clarify)|(ask)|(read)|([ei]nquire)|(obtain)|(seek)|(know)|((^|\s)see($|\s))|(understand)
+access-smthg: (access)|(check)|(complete)|(cancel)|(book)|(confirm)
+acquire-smthg: (get)|(take)|(claim)|(receive)|(sent)|(collect)
+change-smthg: (renew)|(change)|(update)|(inform$)|(notify)
+apply-smthg: (appl(y|(ied)))|(register)|(qualify)|(sign)
+pay-smthg: pa(y|(id)|(yed))
+contact-smthg: (contact)|(report)
+work-smwhr: (work)|(employ)
+need-smthg: (need)|(want)|(require)|(request)|(would like)|(order)
+my-situation: "(have)|((a|'|\u2019|^)m($|\\s))|(feel($|\\s))"
+others-situation: "(has)|(((a|we)|'|\u2019|^)re($|\\s))"
+unclear-situation: "(had)|((i|'|\u2019|^)s($|\\s))|(was)"
+travel: travel
+living: (liv(e|(ing)))|(stay)
+do-smthng: (^|\s)(do|make)($|\s)
+go-smwhr: go($|\s)
+give-smthng: (give)|(provide)
+help: (help)|(protect)|(support)
