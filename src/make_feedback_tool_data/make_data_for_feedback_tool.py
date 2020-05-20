@@ -132,9 +132,6 @@ def extract_phrase_mentions(df: pd.DataFrame, grammar_filename: Optional[str] = 
                 # Define a generic phrase for the text in the combination using regular expressions
                 generic_phrase = (regex_group_verbs(arg1), regex_for_theme(arg2))
 
-                # Filter out phrases that have an "unknown" component
-                # if all([component != "unknown" for component in generic_phrase]):
-
                 # Remove certain characters from `arg1`, and `arg2` using regular expressions, and combine together
                 # in a tuple
                 arg1, arg2 = [re.sub(r"[?()\[\]+*]", "", a) for a in (arg1, arg2)]
