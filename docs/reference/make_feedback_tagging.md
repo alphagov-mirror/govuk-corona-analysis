@@ -1,7 +1,7 @@
 # Feedback tagging functions
 
 This file contains documentation for the feedback tagging functions. The scripts for these functions can be found in
-the `src/make_feedback_tagging` folder. 
+the `src/make_feedback_tagging` folder.
 
 ```eval_rst
 .. currentmodule:: src
@@ -10,12 +10,22 @@ the `src/make_feedback_tagging` folder.
 
 ## Data processing
 
+### Summary function
+
+```eval_rst
+.. autosummary::
+    :toctree: api/
+
+    tagging_preprocessing
+
+```
+
 ### Composite functions
 
 ```eval_rst
 .. autosummary::
     :toctree: api/
-    
+
     concat_identical_columns
     convert_object_to_datetime
     extract_unique_tags

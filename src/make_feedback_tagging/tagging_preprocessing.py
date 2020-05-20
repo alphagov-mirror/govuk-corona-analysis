@@ -280,3 +280,48 @@ def extract_unique_tags(df: pandas.DataFrame, col_key: str = "text_date", col_ta
     # Assert that there are no duplicate rows of data in `cols_others`, before returning `df_out`
     assert not df_out.duplicated(subset=cols_others, keep=False).any(), "Duplicate values remain after processing!"
     return df_out
+
+
+def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,
+                          set_tag_ranks: Optional[Dict[Union[float, str], int]] = None,
+                          out_col_rank_label: str = "rank") -> pandas.DataFrame:
+    """Preprocess the manually tagged data.
+
+    The function operates as follows:
+
+    1. Replace all punctuation in the column headers of `df` with an underscore; adjacent punctuation will all be
+       replaced by a single underscore;
+    2. Convert the datetime-like string column `col_key` of `df` into a datetime pandas Series; and
+    3. Return unique values from `df` across the columns not in `col_key` or `col_tags`, selecting a specific row for
+       duplicate data - see the `src.extract_unique_tags` function for more information.
+
+
+    :param df: A pandas DataFrame containing
+    :param col_key: Default: "text_date". A unique key column in `df` containing strings that start with the datetime
+        format "YYYY-mm-dd HH:MM:SS".
+    :param col_tags: Default: None. A list of columns in `df` containing tags for each row. For duplicate rows, these
+        tags may be different. If None, will use a predefined list of columns - see the `COLS_TAGS` variable from
+        `src.make_feedback_tagging.tagging_preprocessing` for further information.
+    :param set_tag_ranks: Default: None. A dictionary of a predefined hierarchy or ranks for values in columns of
+        `col_tags`, which can be different to ranking order from `col_key`. The dictionary keys are values from
+        `col_tags`, and the dictionary values are their predefined rankings. Not all values of `col_tags` need to be
+        represented here - those that are missing will be replaced by their corresponding value from the ranking of
+        `col_key`. The values should all be less than 0, and in ascending order of priority. If None, will use a
+        predefined list of columns - see the `ORDER_TAGS` variable from
+        `src.make_feedback_tagging.tagging_preprocessing` for further information.
+    :param out_col_rank_label: Default: "rank". A column name used to store the rankings - this is not returned,
+        and is an internal variable; ensure you do not have a column named this in the `df`
+    :return: A pandas DataFrame of unique values, where the duplicated values in `df` are selected using a rank based
+        on the values columns in `col_tags`, and the sorting of `col_key`, where `col_key` is now a datetime object.
+        All column headers will also be in lowercase, with punctuation stripped and replaced with underscores.
+
+    """
+
+    # Standardise the column headers of `df`
+    df_process = standardise_columns(df)
+
+    # Convert `col_key` to a datetime
+    df_process = convert_object_to_datetime(df_process, col_key)
+
+    # Process the data to remove duplicate data outside of `col_key` and `col_tags`
+    return extract_unique_tags(df_process, col_key, col_tags, set_tag_ranks, out_col_rank_label)

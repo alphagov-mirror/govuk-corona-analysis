@@ -13,6 +13,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     rank_tags,
     sort_and_drop_duplicates,
     standardise_columns,
+    tagging_preprocessing
 )
 from typing import Callable, Union
 import numpy as np
@@ -587,3 +588,77 @@ class TestExtractUniqueTagsRaisesAssertionError:
         with pytest.raises(AssertionError, match="Duplicate values remain after processing!"):
             _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
                                     "rank")
+
+
+@pytest.fixture
+def resource_tagging_preprocessing_integration(mocker):
+    """Define the patches for the tagging_preprocessing integration tests."""
+
+    # Patch functions used by `tagging_preprocessing`
+    patch_standardise_columns = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.standardise_columns")
+    patch_convert_object_to_datetime = mocker.patch(
+        "src.make_feedback_tagging.tagging_preprocessing.convert_object_to_datetime"
+    )
+    patch_extract_unique_tags = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.extract_unique_tags")
+
+    return {"patch_standardise_columns": patch_standardise_columns,
+            "patch_convert_object_to_datetime": patch_convert_object_to_datetime,
+            "patch_extract_unique_tags": patch_extract_unique_tags}
+
+
+@pytest.mark.parametrize("test_input_df, test_input_col_key, test_input_col_tags", args_extract_unique_tags_integration)
+@pytest.mark.parametrize("test_input_out_col_rank_label", args_extract_unique_tags_integration_out_col_rank_label)
+@pytest.mark.parametrize("test_input_set_tag_ranks", args_extract_unique_tags_integration_set_tag_ranks)
+class TestTaggingPreProcessingIntegration:
+
+    def test_standardise_columns_called_once_correctly(self, resource_tagging_preprocessing_integration, test_input_df,
+                                                       test_input_col_key, test_input_col_tags,
+                                                       test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test that tagging_preprocessing calls standardise_columns once correctly."""
+
+        # Call the `tagging_preprocessing` function
+        _ = tagging_preprocessing(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                  test_input_out_col_rank_label)
+
+        # Assert `standardise_columns` is called once
+        resource_tagging_preprocessing_integration["patch_standardise_columns"].assert_called_once()
+
+        # Get the call arguments list, and then extract the arguments and keyword arguments for the first and only call
+        test_output = resource_tagging_preprocessing_integration["patch_standardise_columns"].call_args_list
+        test_output_args, test_output_kwargs = test_output[0]
+
+        # Assert that there is only one argument, and no keyword arguments
+        assert len(test_output_args) == 1
+        assert not test_output_kwargs
+
+        # Assert the argument is as expected
+        assert_frame_equal(test_output_args[0], test_input_df)
+
+    def test_convert_object_to_datetime_called_once_correctly(self, resource_tagging_preprocessing_integration,
+                                                              test_input_df, test_input_col_key, test_input_col_tags,
+                                                              test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test that tagging_preprocessing calls convert_object_to_datetime once correctly."""
+
+        # Call the `tagging_preprocessing` function
+        _ = tagging_preprocessing(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                  test_input_out_col_rank_label)
+
+        # Assert `convert_object_to_datetime` is called once with the correct arguments
+        resource_tagging_preprocessing_integration["patch_convert_object_to_datetime"].assert_called_once_with(
+            resource_tagging_preprocessing_integration["patch_standardise_columns"].return_value, test_input_col_key
+        )
+
+    def test_extract_unique_tags_called_once_correctly(self, resource_tagging_preprocessing_integration,
+                                                       test_input_df, test_input_col_key, test_input_col_tags,
+                                                       test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test that tagging_preprocessing calls extract_unique_tags once correctly."""
+
+        # Call the `tagging_preprocessing` function
+        _ = tagging_preprocessing(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                  test_input_out_col_rank_label)
+
+        # Assert `extract_unique_tags` is called once with the correct arguments
+        resource_tagging_preprocessing_integration["patch_extract_unique_tags"].assert_called_once_with(
+            resource_tagging_preprocessing_integration["patch_convert_object_to_datetime"].return_value,
+            test_input_col_key, test_input_col_tags, test_input_set_tag_ranks, test_input_out_col_rank_label
+        )

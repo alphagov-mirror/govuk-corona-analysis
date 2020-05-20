@@ -9,6 +9,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     rank_tags,
     sort_and_drop_duplicates,
     standardise_columns,
+    tagging_preprocessing
 )
 from src.make_feedback_tool_data.chunk import Chunk
 from src.make_feedback_tool_data.make_data_for_feedback_tool import (
@@ -51,4 +52,5 @@ __all__ = [
     "save_intermediate_df",
     "sort_and_drop_duplicates",
     "standardise_columns",
+    "tagging_preprocessing"
 ]
