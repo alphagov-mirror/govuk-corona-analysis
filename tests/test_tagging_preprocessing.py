@@ -1,6 +1,7 @@
 from datetime import datetime
 from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
+    concat_identical_columns,
     convert_object_to_datetime,
     find_duplicated_rows,
     get_rank_statistic,
@@ -87,6 +88,21 @@ args_function_returns_correctly_sort_and_drop_duplicates = [
      pd.DataFrame({"rank": [3, 4, 5], "data": [6, 1, 4]}, index=pd.Int64Index([1, 3, 4])))
 ]
 
+# Define arguments for to test `concat_identical_columns` in the `test_function_returns_correctly` test
+args_function_returns_correctly_concat_identical_columns = [
+    ([pd.DataFrame({"data": [3, 7, 9]}, index=pd.Int64Index([1, 4, 5])),
+      pd.DataFrame({"rank": [1, 2, 4], "data": [4, 6, 1]}, index=pd.Int64Index([0, 2, 3]))],
+     pd.DataFrame({"data": [4, 3, 6, 1, 7, 9]})),
+    ([pd.DataFrame({"rank": [1, 2, 4], "data": [4, 6, 1]}, index=pd.Int64Index([0, 2, 3])),
+      pd.DataFrame({"data": [3, 7, 9]}, index=pd.Int64Index([1, 4, 5]))],
+     pd.DataFrame({"data": [4, 3, 6, 1, 7, 9]})),
+    ([pd.DataFrame({"data1": [3, 7, 9], "data2": [1, 3, 5]}, index=pd.Int64Index([1, 4, 5])),
+      pd.DataFrame({"rank": [1, 2, 4], "data1": [4, 6, 1], "data2": [7, 2, 4]}, index=pd.Int64Index([0, 2, 3]))],
+     pd.DataFrame({"data1": [4, 3, 6, 1, 7, 9], "data2": [7, 1, 2, 4, 3, 5]})),
+    ([pd.DataFrame({"rank": [1, 2, 4], "data1": [4, 6, 1], "data2": [7, 2, 4]}, index=pd.Int64Index([0, 2, 3])),
+      pd.DataFrame({"data1": [3, 7, 9], "data2": [1, 3, 5]}, index=pd.Int64Index([1, 4, 5]))],
+     pd.DataFrame({"data1": [4, 3, 6, 1, 7, 9], "data2": [7, 1, 2, 4, 3, 5]}))
+]
 
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
@@ -97,6 +113,7 @@ args_function_returns_correctly = [
     *[(rank_tags, *a) for a in args_function_returns_correctly_rank_tags],
     *[(get_rank_statistic, *a) for a in args_function_returns_correctly_get_rank_statistic],
     *[(sort_and_drop_duplicates, *a) for a in args_function_returns_correctly_sort_and_drop_duplicates],
+    *[(concat_identical_columns, *a) for a in args_function_returns_correctly_concat_identical_columns]
 ]
 
 

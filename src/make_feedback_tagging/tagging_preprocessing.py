@@ -177,3 +177,23 @@ def sort_and_drop_duplicates(df: pandas.DataFrame, col_rank: str, col_duplicates
 
     """
     return df.sort_values(by=col_rank, ascending=ascending).drop_duplicates(subset=col_duplicates).sort_index()
+
+
+def concat_identical_columns(df1: pandas.DataFrame, df2: pandas.DataFrame) -> pandas.DataFrame:
+    """Concatenate two pandas DataFrames along their common columns.
+
+    :param df1: A pandas DataFrame with some columns common to `df2`.
+    :param df2: A pandas DataFrame with some columns common to `df1`.
+    :return: A pandas DataFrame with both `df1`, and `df2` concatenated together using only their common columns,
+        with the returned index sorted in ascending order.
+
+    """
+
+    # Determine the identical columns across both `df1`, and `df2`, keeping the order of columns as seen in `df1`
+    cols_identical = sorted(set(df1.columns) & set(df2.columns), key=list(df1.columns).index)
+
+    # Assert that there must be some identical columns
+    assert cols_identical, "Must have common columns between `df1` and `df2` - no common columns found!"
+
+    # Return the concatenation of `df1`, and `df2` across common columns, and sort the index in ascending order
+    return pandas.concat([df1[cols_identical], df2[cols_identical]]).sort_index()

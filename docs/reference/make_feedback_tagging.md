@@ -14,6 +14,7 @@ the `src/make_feedback_tagging` folder.
 .. autosummary::
     :toctree: api/
     
+    concat_identical_columns
     convert_object_to_datetime
     find_duplicated_rows
     get_rank_statistic

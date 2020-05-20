@@ -1,4 +1,5 @@
 from src.make_feedback_tagging.tagging_preprocessing import (
+    concat_identical_columns,
     convert_object_to_datetime,
     find_duplicated_rows,
     get_rank_statistic,
@@ -30,6 +31,7 @@ __all__ = [
     "ChunkParser",
     "PreProcess",
     "PII_REGEX",
+    "concat_identical_columns",
     "convert_object_to_datetime",
     "create_dataset",
     "create_phrase_level_columns",
