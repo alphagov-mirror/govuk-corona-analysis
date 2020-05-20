@@ -14,6 +14,7 @@ the `src/make_feedback_tagging` folder.
 .. autosummary::
     :toctree: api/
     
+    convert_object_to_datetime
     standardise_columns
 
 ```

@@ -1,4 +1,5 @@
 from src.make_feedback_tagging.tagging_preprocessing import (
+    convert_object_to_datetime,
     standardise_columns,
 )
 from src.make_feedback_tool_data.chunk import Chunk
@@ -23,6 +24,7 @@ __all__ = [
     "ChunkParser",
     "PreProcess",
     "PII_REGEX",
+    "convert_object_to_datetime",
     "create_dataset",
     "create_phrase_level_columns",
     "drop_duplicate_rows",
