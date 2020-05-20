@@ -47,4 +47,4 @@ bills-to-pay: (bill)|(tax)|(mortgage)|(rent)|(loan)|(debt)|(fine)|(fee)|(insuran
 scheme: scheme
 visa: (^|\s)visa($|\s)
 data: (data)|(cases)|(situation)|(stat(istic)?s?$)|(status)|(news)|(progress)
-death: dea((th)|d)
+death: dea((th)|d)|(funeral)
