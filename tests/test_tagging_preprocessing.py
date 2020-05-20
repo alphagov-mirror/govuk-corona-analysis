@@ -3,6 +3,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
     find_duplicated_rows,
+    rank_rows,
     standardise_columns,
 )
 from typing import Callable, Union
@@ -33,11 +34,34 @@ args_function_returns_correctly_find_duplicated_rows = [
      pd.DataFrame({"id": [1, 2], "col_a": [4, 4], "col_b": [7, 7]}, index=pd.Int64Index([1, 2])))
 ]
 
+# Define arguments for to test `rank_rows` in the `test_function_returns_correctly` test
+args_function_returns_correctly_rank_rows = [
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 9, 6, 7]}), "col_rank"],
+     pd.Series([2, 1, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 9, 6, 7]}), "col_rank", "first"],
+     pd.Series([2, 1, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 8, 6, 7]}), "col_rank", "first"],
+     pd.Series([1, 2, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 8, 6, 7]}), "col_rank", "average"],
+     pd.Series([1.5, 1.5, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 8, 6, 7]}), "col_rank", "min"],
+     pd.Series([1, 1, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 8, 6, 7]}), "col_rank", "max"],
+     pd.Series([2, 2, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 8, 6, 7]}), "col_rank", "dense"],
+     pd.Series([1, 1, 3, 2], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 9, 6, 7]}), "col_rank", "first", False],
+     pd.Series([2, 1, 4, 3], dtype="float64", name="col_rank")),
+    ([pd.DataFrame({"id": [0, 1, 2, 3], "col_rank": [8, 9, 6, 7]}), "col_rank", "first", True],
+     pd.Series([3, 4, 1, 2], dtype="float64", name="col_rank")),
+]
+
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
     *[(standardise_columns, *a) for a in args_function_returns_correctly_standardise_columns_returns_correctly],
     *[(convert_object_to_datetime, *a) for a in args_function_returns_correctly_convert_object_to_datetime],
     *[(find_duplicated_rows, *a) for a in args_function_returns_correctly_find_duplicated_rows],
+    *[(rank_rows, *a) for a in args_function_returns_correctly_rank_rows],
 ]
 
 

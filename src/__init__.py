@@ -1,6 +1,7 @@
 from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
     find_duplicated_rows,
+    rank_rows,
     standardise_columns,
 )
 from src.make_feedback_tool_data.chunk import Chunk
@@ -35,6 +36,7 @@ __all__ = [
     "regex_category_identification",
     "regex_group_verbs",
     "regex_for_theme",
+    "rank_rows",
     "save_intermediate_df",
     "standardise_columns",
 ]

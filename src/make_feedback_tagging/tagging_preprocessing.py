@@ -65,3 +65,16 @@ def find_duplicated_rows(df: pandas.DataFrame, col_duplicates: List[str]) -> pan
 
     # Return just the duplicated rows
     return df[bool_duplicate_rows]
+
+
+def rank_rows(df: pandas.DataFrame, col_key: str, method: str = "first", ascending: bool = False) -> pandas.Series:
+    """Rank the rows along a column of a pandas DataFrame.
+
+    :param df: A pandas DataFrame for ranking
+    :param col_key: A column for the ranking.
+    :param method: Default: "first". A method for ranking - see pandas.Series.rank for options, and further details.
+    :param ascending: Default: False. If True, ranks in ascending order.
+    :return: A ranked pandas Series according to the chosen method and order.
+
+    """
+    return df[col_key].rank(method=method, ascending=ascending)
