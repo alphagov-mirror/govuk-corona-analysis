@@ -444,7 +444,7 @@ class TestExtractPhraseMentionsIntegrationComboSection:
 args_extract_phrase_mentions_returns_correctly_expected = [
     ([[{"chunked_phrase": ("test to see if", "this example"),
         "exact_phrase": ("test to see if", "this example"),
-        "generic_phrase": ("find-smthg", "unknown"),
+        "generic_phrase": ("find", "unknown"),
         "key": ("verb", "noun")}]]),
     ([[{"chunked_phrase": ("to extract", "lemma"),
         "exact_phrase": ("to extract", "lemma"),
@@ -452,7 +452,7 @@ args_extract_phrase_mentions_returns_correctly_expected = [
         "key": ("verb", "noun")}]]),
     ([[{"chunked_phrase": ("test to see if", "this example"),
         "exact_phrase": ("test to see if", "this example"),
-        "generic_phrase": ("find-smthg", "unknown"),
+        "generic_phrase": ("find", "unknown"),
         "key": ("verb", "noun")},
        {"chunked_phrase": ("to extract", "lemma"),
         "exact_phrase": ("to extract", "lemma"),
@@ -460,7 +460,7 @@ args_extract_phrase_mentions_returns_correctly_expected = [
         "key": ("verb", "noun")}]]),
     ([[{"chunked_phrase": ("tried to signed up for", "advice"),
         "exact_phrase": ("tried to signed up for", "advice"),
-        "generic_phrase": ("apply-smthg", "information"),
+        "generic_phrase": ("apply", "information"),
         "key": ("verb", "noun")},
        {"chunked_phrase": ("advice", "due to the ongoing covid 19 outbreak"),
         "exact_phrase": ("advice", "due to the ongoing covid 19 outbreak"),
@@ -484,10 +484,10 @@ args_extract_phrase_mentions_returns_correctly = [
 
 # Define expected outputs for the `test_create_phrase_level_columns_returns_correctly` test
 args_create_phrase_level_columns_returns_correctly_expected = [
-    ("test to see if, this example", "find-smthg, unknown"),
+    ("test to see if, this example", "find, unknown"),
     ("to extract, lemma", "unknown, unknown"),
-    ("test to see if, this example\nto extract, lemma", "find-smthg, unknown\nunknown, unknown"),
-    ("tried to signed up for, advice", "apply-smthg, information")
+    ("test to see if, this example\nto extract, lemma", "find, unknown\nunknown, unknown"),
+    ("tried to signed up for, advice", "apply, information")
 ]
 
 # Initialise a storing variable for the `test_create_phrase_level_columns_returns_correctly` test
@@ -715,7 +715,7 @@ EXAMPLE_SURVEY_DF_OUTPUT = EXAMPLE_SURVEY_DF.assign(
     ))),
     generic_phrases=EXAMPLE_SURVEY_DF["Q3"].map(dict(zip(
         args_extract_phrase_mentions_inputs_q3_edit,
-        ["find-smthg, unknown", "unknown, unknown", "find-smthg, unknown\nunknown, unknown", "apply-smthg, information"]
+        ["find, unknown", "unknown, unknown", "find, unknown\nunknown, unknown", "apply, information"]
     )))
 ).drop_duplicates(subset=["primary_key"]) \
     .reset_index(drop=True)
