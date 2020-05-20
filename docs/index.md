@@ -6,6 +6,6 @@ Here is the documentation for the govuk-corona-analysis project.
 .. toctree::
     :maxdepth: 2
 
-    reference.md
+    reference/README.md
 
 ```

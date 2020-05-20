@@ -1,15 +1,14 @@
-# `src` API Reference
+# Feedback tool functions
 
-This page gives an overview of all public objects, functions, and methods in the `src` package.
-
-## `make_feedback_tool_data`
+This file contains documentation for the feedback tool functions. The scripts for these functions can be found in the
+`src/make_feedback_tool_data` folder.
 
 ```eval_rst
-.. currentmodule:: src.make_feedback_tool_data
+.. currentmodule:: src
 
 ```
 
-### Summary function
+## Summary function
 
 ```eval_rst
 .. autosummary::
@@ -19,7 +18,7 @@ This page gives an overview of all public objects, functions, and methods in the
 
 ```
 
-#### Composite functions
+### Composite functions
 
 ```eval_rst
 .. autosummary::
@@ -33,7 +32,7 @@ This page gives an overview of all public objects, functions, and methods in the
 
 ```
 
-### Text pre-processing
+## Text pre-processing
 
 ```eval_rst
 .. autosummary::
@@ -51,7 +50,7 @@ This page gives an overview of all public objects, functions, and methods in the
 
 ```
 
-### Text chunking based on regular expression grammar rules
+## Text chunking based on regular expression grammar rules
 
 ```eval_rst
 .. autosummary::
@@ -66,7 +65,7 @@ This page gives an overview of all public objects, functions, and methods in the
 ```
 
 
-### Part-of-speech (POS) extraction
+## Part-of-speech (POS) extraction
 
 ```eval_rst
 .. autosummary::
