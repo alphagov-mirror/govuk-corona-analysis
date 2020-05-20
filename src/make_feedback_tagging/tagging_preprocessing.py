@@ -1,3 +1,4 @@
+from typing import List
 import pandas
 import re
 
@@ -46,3 +47,21 @@ def convert_object_to_datetime(df: pandas.DataFrame, col_datetime: str = "text_d
 
     # Return the revised pandas DataFrame
     return df_out
+
+
+def find_duplicated_rows(df: pandas.DataFrame, col_duplicates: List[str]) -> pandas.DataFrame:
+    """Find all duplicated rows within certain columns of a pandas DataFrame,
+
+    :param df: A pandas DataFrame with at least the columns in `col_duplicates`. `df` potentially contains duplicate
+        rows of data across just these columns `col_duplicates`
+    :param col_duplicates: A list of column names in `df` where there could be potentially duplicate rows of data.
+    :return: A pandas DataFrame of all the duplicate rows of data in `df`, when finding duplicates just in the
+        `col_duplicates` columns.
+
+    """
+
+    # Get all boolean pandas Series for any rows that have duplicates
+    bool_duplicate_rows = df[col_duplicates].duplicated(keep=False)
+
+    # Return just the duplicated rows
+    return df[bool_duplicate_rows]

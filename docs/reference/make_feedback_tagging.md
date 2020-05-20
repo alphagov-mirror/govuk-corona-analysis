@@ -15,6 +15,7 @@ the `src/make_feedback_tagging` folder.
     :toctree: api/
     
     convert_object_to_datetime
+    find_duplicated_rows
     standardise_columns
 
 ```

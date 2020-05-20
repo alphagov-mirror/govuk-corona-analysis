@@ -2,6 +2,7 @@ from datetime import datetime
 from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
+    find_duplicated_rows,
     standardise_columns,
 )
 from typing import Callable, Union
@@ -24,10 +25,19 @@ args_function_returns_correctly_convert_object_to_datetime = [
      pd.DataFrame({"text_date": [datetime(2020, 12, 29, 18, 28, 43), datetime(2020, 2, 17, 12, 7, 4)], "data": [2, 3]}))
 ]
 
+# Define arguments for to test `find_duplicated_rows` in the `test_function_returns_correctly` test
+args_function_returns_correctly_find_duplicated_rows = [
+    ([pd.DataFrame({"id": [0, 1, 2], "col_a": [3, 4, 5], "col_b": [6, 7, 8]}), ["col_a", "col_b"]],
+     pd.DataFrame(index=pd.Int64Index([]), columns=["id", "col_a", "col_b"], dtype="int64")),
+    ([pd.DataFrame({"id": [0, 1, 2], "col_a": [3, 4, 4], "col_b": [6, 7, 7]}), ["col_a", "col_b"]],
+     pd.DataFrame({"id": [1, 2], "col_a": [4, 4], "col_b": [7, 7]}, index=pd.Int64Index([1, 2])))
+]
+
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
     *[(standardise_columns, *a) for a in args_function_returns_correctly_standardise_columns_returns_correctly],
     *[(convert_object_to_datetime, *a) for a in args_function_returns_correctly_convert_object_to_datetime],
+    *[(find_duplicated_rows, *a) for a in args_function_returns_correctly_find_duplicated_rows],
 ]
 
 
