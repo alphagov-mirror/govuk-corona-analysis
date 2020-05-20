@@ -132,24 +132,26 @@ def extract_phrase_mentions(df: pd.DataFrame, grammar_filename: Optional[str] = 
                 # Define a generic phrase for the text in the combination using regular expressions
                 generic_phrase = (regex_group_verbs(arg1), regex_for_theme(arg2))
 
-                # Remove certain characters from `arg1`, and `arg2` using regular expressions, and combine together
-                # in a tuple
-                arg1, arg2 = [re.sub(r"[?()\[\]+*]", "", a) for a in (arg1, arg2)]
-                phrase = (arg1, arg2)
+                if all([component != "unknown" for component in generic_phrase]):
 
-                # Get a phrase that matches `comment`
-                exact_phrase = list(PreProcess.find_needle(" ".join(phrase), comment.lower()).values())[0]
+                    # Remove certain characters from `arg1`, and `arg2` using regular expressions, and combine together
+                    # in a tuple
+                    arg1, arg2 = [re.sub(r"[?()\[\]+*]", "", a) for a in (arg1, arg2)]
+                    phrase = (arg1, arg2)
 
-                # Get the verb that matches `exact_phrase`
-                if exact_phrase is not None:
-                    exact_verb = list(PreProcess.find_needle(arg1, exact_phrase).values())[0]
+                    # Get a phrase that matches `comment`
+                    exact_phrase = list(PreProcess.find_needle(" ".join(phrase), comment.lower()).values())[0]
 
-                    # If `exact_verb` exists, then remove it out from `exact_phrase`, trim any white space,
-                    # and append all the information to `phrase_mentions`
-                    if exact_verb is not None:
-                        exact_phrase = (exact_verb, re.sub(exact_verb, "", exact_phrase).strip())
-                        phrase_mentions[-1].append({"chunked_phrase": phrase, "exact_phrase": exact_phrase,
-                                                    "generic_phrase": generic_phrase, "key": key})
+                    # Get the verb that matches `exact_phrase`
+                    if exact_phrase is not None:
+                        exact_verb = list(PreProcess.find_needle(arg1, exact_phrase).values())[0]
+
+                        # If `exact_verb` exists, then remove it out from `exact_phrase`, trim any white space,
+                        # and append all the information to `phrase_mentions`
+                        if exact_verb is not None:
+                            exact_phrase = (exact_verb, re.sub(exact_verb, "", exact_phrase).strip())
+                            phrase_mentions[-1].append({"chunked_phrase": phrase, "exact_phrase": exact_phrase,
+                                                        "generic_phrase": generic_phrase, "key": key})
 
     # Return `df` with a new column for `phrase_mentions`
     return df.assign(themed_phrase_mentions=phrase_mentions)
