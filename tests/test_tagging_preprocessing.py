@@ -4,6 +4,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
     find_duplicated_rows,
     rank_rows,
+    rank_tags,
     standardise_columns,
 )
 from typing import Callable, Union
@@ -56,12 +57,23 @@ args_function_returns_correctly_rank_rows = [
      pd.Series([3, 4, 1, 2], dtype="float64", name="col_rank")),
 ]
 
+# Define arguments for to test `rank_tags` in the `test_function_returns_correctly` test
+args_function_returns_correctly_rank_tags = [
+    ([pd.DataFrame({"col_tag": ["a", "b", "c", "d"], "data": [0, 1, 2, 3]}), "col_tag", pd.Series([4, 3, 2, 1]),
+      {"b": -1, "d": -2}],
+     pd.Series([7, 2, 5, 1])),
+    ([pd.DataFrame({"col_tag": ["a", "b", "c", "d"], "data": [0, 1, 2, 3]}), "col_tag", pd.Series([4, 3, 2, 1]),
+      {"a": -6, "b": -1, "d": -2}],
+     pd.Series([1, 6, 9, 5]))
+]
+
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
     *[(standardise_columns, *a) for a in args_function_returns_correctly_standardise_columns_returns_correctly],
     *[(convert_object_to_datetime, *a) for a in args_function_returns_correctly_convert_object_to_datetime],
     *[(find_duplicated_rows, *a) for a in args_function_returns_correctly_find_duplicated_rows],
     *[(rank_rows, *a) for a in args_function_returns_correctly_rank_rows],
+    *[(rank_tags, *a) for a in args_function_returns_correctly_rank_tags],
 ]
 
 
@@ -80,3 +92,21 @@ def test_convert_object_to_datetime_raises_error_for_nat():
     with pytest.raises(AssertionError):
         _ = convert_object_to_datetime(pd.DataFrame({"text_date": ["2020-12-29 18:28:43", None], "data": [2, 3]}),
                                        "text_date")
+
+
+# Define some test cases for the `test_rank_tags_raises_assertion_error` test
+args_rank_tags_raises_assertion_error = [a for args in args_function_returns_correctly_rank_tags for a in args[:-1]]
+
+
+@pytest.mark.parametrize("test_input_df, test_input_col_tag, test_input_s_ranked, test_input_set_tag_ranks",
+                         args_rank_tags_raises_assertion_error)
+def test_rank_tags_raises_assertion_error(test_input_df, test_input_col_tag, test_input_s_ranked,
+                                          test_input_set_tag_ranks):
+    """Test rank_tags raises an assertion error if the lengths of df and s_ranked do not match."""
+
+    # Iterate over the length of `test_input_s_ranked`, and execute `rank_tags` with a filtered `test_input_s_ranked`
+    # less than its original length - should always raise an `AssertionError` with a specific message
+    for ii in range(len(test_input_s_ranked) - 1):
+        with pytest.raises(AssertionError, match=f"'s_ranked', and 'df' must be the same length!: {ii:,} != "
+                                                 f"{len(test_input_df):,}"):
+            rank_tags(test_input_df, test_input_col_tag, test_input_s_ranked.iloc[:ii], test_input_set_tag_ranks)

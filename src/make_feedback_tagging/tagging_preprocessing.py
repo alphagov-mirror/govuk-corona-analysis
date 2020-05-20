@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Union
 import pandas
 import re
 
@@ -78,3 +78,41 @@ def rank_rows(df: pandas.DataFrame, col_key: str, method: str = "first", ascendi
 
     """
     return df[col_key].rank(method=method, ascending=ascending)
+
+
+def rank_tags(df: pandas.DataFrame, col_tag: str, s_ranked: pandas.Series,
+              set_tag_ranks: Dict[Union[float, str], int]) -> pandas.Series:
+    """Rank tags using a predefined hierarchy, back-filled with calculated ranks.
+
+    The predefined hierarchy of ranks is a dictionary is used to set ranks based on the value of the `col_tag` column
+    in `df`. This ensures that desirable/undesirable ranks are forced to a set rank. Any other values not listed in
+    the hierarchy are back-filled using already calculated ranks from `s_ranked`.
+
+    The outputted ranking is always a positive, and non-zero integer between 1 and n, where n is the largest possible
+    rank.
+
+    :param df: A pandas DataFrame for ranking.
+    :param col_tag: A column in `df` containing tags for ranking.
+    :param s_ranked: A pandas Series of calculated ranks that ignores the hierarchy.
+    :param set_tag_ranks: A dictionary of a predefined hierarchy or ranks for values in `col_tag`, which can be
+        different to `s_ranked`. The dictionary keys are values from `col_tag`, and the dictionary values are their
+        predefined rankings. Not all values of `col_tag` need to be represented here - those that are missing will be
+        replaced by their corresponding value from `s_ranked`. The values should all be less than 0, and in ascending
+        order of priority.
+    :return: A pandas Series of the ranks of `col_tag` using a combination of predefined ranks from `set_tag_ranks`,
+        back-filled with calculated ranks from `s_ranked`.
+
+    """
+
+    # Assert that `s_ranked` must be the same length as `df`
+    assert len(s_ranked) == len(df), f"'s_ranked', and 'df' must be the same length!: {len(s_ranked):,} != {len(df):,}"
+
+    # Create a boolean pandas Series of where all the tags in `col_tag` matches the keys of `set_tag_ranks`
+    bool_set_tags = df[col_tag].isin(set_tag_ranks.keys())
+
+    # Where `bool_set_tags` is True, replace `s_ranked` with the values from `set_tag_ranks`, otherwise use the
+    # values from `s_ranked`
+    s_ranked_tag = s_ranked.where(~bool_set_tags, df[col_tag].replace(set_tag_ranks)).astype(int)
+
+    # Adjust the ranks, so that the minimum value is 1
+    return s_ranked_tag.add(abs(s_ranked_tag.min()) + 1) if s_ranked_tag.min() < 1 else s_ranked_tag

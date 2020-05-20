@@ -17,6 +17,7 @@ the `src/make_feedback_tagging` folder.
     convert_object_to_datetime
     find_duplicated_rows
     rank_rows
+    rank_tags
     standardise_columns
 
 ```
