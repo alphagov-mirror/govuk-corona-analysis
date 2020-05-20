@@ -1,3 +1,6 @@
+from src.make_feedback_tagging.tagging_preprocessing import (
+    standardise_columns,
+)
 from src.make_feedback_tool_data.chunk import Chunk
 from src.make_feedback_tool_data.make_data_for_feedback_tool import (
     create_dataset,
@@ -28,5 +31,6 @@ __all__ = [
     "regex_category_identification",
     "regex_group_verbs",
     "regex_for_theme",
-    "save_intermediate_df"
+    "save_intermediate_df",
+    "standardise_columns",
 ]
