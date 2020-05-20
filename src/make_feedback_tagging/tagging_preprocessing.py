@@ -157,3 +157,23 @@ def get_rank_statistic(s_ranked_tags: List[pandas.Series]) -> pandas.Series:
 
     """
     return reduce(lambda x, y: x.multiply(y), s_ranked_tags).pow(1 / float(len(s_ranked_tags)))
+
+
+def sort_and_drop_duplicates(df: pandas.DataFrame, col_rank: str, col_duplicates: List[str],
+                             ascending: bool = False) -> pandas.DataFrame:
+    """Get unique values in a pandas DataFrame based on the lowest or highest ranked value for each duplicate.
+
+    This function first sorts `df` along `col_rank` either in ascending (`ascending=True`) or descending
+    (`ascending=False`) order. It then drops any duplicates along the `col_duplicates` columns, before re-sorting the
+    resultant pandas DataFrame index in ascending order, and returning it.
+
+    :param df: A pandas DataFrame, potentially containing duplicate data, for sorting and extracting the lowest or
+        highest ranked duplicate.
+    :param col_rank: A column in `df` that contains the ranks of each row
+    :param col_duplicates: A list of column names in `df` where there could be potentially duplicate rows of data.
+    :param ascending: Default: False. If True, returns the lowest rank duplicate. If False, returns the highest
+        ranked duplicate.
+    :return: A pandas DataFrame containing only unique data.
+
+    """
+    return df.sort_values(by=col_rank, ascending=ascending).drop_duplicates(subset=col_duplicates).sort_index()

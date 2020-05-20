@@ -5,6 +5,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     rank_multiple_tags,
     rank_rows,
     rank_tags,
+    sort_and_drop_duplicates,
     standardise_columns,
 )
 from src.make_feedback_tool_data.chunk import Chunk
@@ -44,5 +45,6 @@ __all__ = [
     "rank_rows",
     "rank_tags",
     "save_intermediate_df",
+    "sort_and_drop_duplicates",
     "standardise_columns",
 ]

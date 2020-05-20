@@ -7,6 +7,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     rank_multiple_tags,
     rank_rows,
     rank_tags,
+    sort_and_drop_duplicates,
     standardise_columns,
 )
 from typing import Callable, Union
@@ -78,6 +79,15 @@ args_function_returns_correctly_get_rank_statistic = [
      pd.Series([1.5650845800732873, 1.8612097182041991, 2.0597671439071177])),
 ]
 
+# Define arguments for to test `sort_and_drop_duplicates` in the `test_function_returns_correctly` test
+args_function_returns_correctly_sort_and_drop_duplicates = [
+    ([pd.DataFrame({"rank": [1, 3, 2, 4, 5], "data": [4, 6, 6, 1, 4]}), "rank", ["data"], True],
+     pd.DataFrame({"rank": [1, 2, 4], "data": [4, 6, 1]}, index=pd.Int64Index([0, 2, 3]))),
+    ([pd.DataFrame({"rank": [1, 3, 2, 4, 5], "data": [4, 6, 6, 1, 4]}), "rank", ["data"], False],
+     pd.DataFrame({"rank": [3, 4, 5], "data": [6, 1, 4]}, index=pd.Int64Index([1, 3, 4])))
+]
+
+
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
     *[(standardise_columns, *a) for a in args_function_returns_correctly_standardise_columns_returns_correctly],
@@ -86,6 +96,7 @@ args_function_returns_correctly = [
     *[(rank_rows, *a) for a in args_function_returns_correctly_rank_rows],
     *[(rank_tags, *a) for a in args_function_returns_correctly_rank_tags],
     *[(get_rank_statistic, *a) for a in args_function_returns_correctly_get_rank_statistic],
+    *[(sort_and_drop_duplicates, *a) for a in args_function_returns_correctly_sort_and_drop_duplicates],
 ]
 
 
