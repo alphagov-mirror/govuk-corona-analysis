@@ -1,8 +1,11 @@
 from datetime import datetime
 from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
+    COLS_TAGS,
+    ORDER_TAGS,
     concat_identical_columns,
     convert_object_to_datetime,
+    extract_unique_tags,
     find_duplicated_rows,
     get_rank_statistic,
     rank_multiple_tags,
@@ -12,6 +15,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     standardise_columns,
 )
 from typing import Callable, Union
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -104,6 +108,105 @@ args_function_returns_correctly_concat_identical_columns = [
      pd.DataFrame({"data1": [4, 3, 6, 1, 7, 9], "data2": [7, 1, 2, 4, 3, 5]}))
 ]
 
+# Define arguments for to test `extract_unique_tags` in the `test_function_returns_correctly` test
+args_function_returns_correctly_extract_unique_tags = [
+    ([pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                  datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
+                                  datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
+                                  datetime(2020, 1, 1, 6, 0, 0), datetime(2020, 1, 1, 7, 0, 0),
+                                  datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
+                    "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                    "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}),
+      "text_date", None, None, "rank"],
+     pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                 datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
+                                 datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
+                                 datetime(2020, 1, 1, 6, 0, 0), datetime(2020, 1, 1, 7, 0, 0),
+                                 datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
+                   "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+                   "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+                   "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                   "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]})),
+    ([pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                  datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
+                                  datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
+                                  datetime(2020, 1, 1, 6, 0, 0), datetime(2020, 1, 1, 7, 0, 0),
+                                  datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
+                    "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
+                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
+                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                    "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
+      "text_date", None, None, "rank"],
+     pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                 datetime(2020, 1, 1, 3, 0, 0), datetime(2020, 1, 1, 4, 0, 0),
+                                 datetime(2020, 1, 1, 5, 0, 0), datetime(2020, 1, 1, 6, 0, 0),
+                                 datetime(2020, 1, 1, 7, 0, 0)],
+                   "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
+                   "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
+                   "needs_urgent_attention_of_product_teams": ["1", "2", "4", "5", "6", "7", "8"],
+                   "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7]))),
+    ([pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                  datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
+                                  datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
+                                  datetime(2020, 1, 1, 6, 0, 0), datetime(2020, 1, 1, 7, 0, 0),
+                                  datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
+                    "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
+                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
+                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                    "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
+      "text_date", COLS_TAGS, ORDER_TAGS, "rank"],
+     pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                 datetime(2020, 1, 1, 3, 0, 0), datetime(2020, 1, 1, 4, 0, 0),
+                                 datetime(2020, 1, 1, 5, 0, 0), datetime(2020, 1, 1, 6, 0, 0),
+                                 datetime(2020, 1, 1, 7, 0, 0)],
+                   "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
+                   "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
+                   "needs_urgent_attention_of_product_teams": ["1", "2", "4", "5", "6", "7", "8"],
+                   "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
+]
+
+# Define arguments for to test `tagging_preprocessing` in the `test_function_returns_correctly` test
+args_function_returns_correctly_tagging_preprocessing = [
+    ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
+                                  "2020-01-01 03:00:00 GMT", "2020-01-01 04:00:00 ", "2020-01-01 05:00:00  ",
+                                  "2020-01-01 06:00:00  CET", "2020-01-01 07:00:00 Time", "2020-01-01 08:00:00 time",
+                                  "2020-01-01 09:00:00"],
+                    "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                    "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}),
+      "text_date", None, None, "rank"],
+     pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                 datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
+                                 datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
+                                 datetime(2020, 1, 1, 6, 0, 0), datetime(2020, 1, 1, 7, 0, 0),
+                                 datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
+                   "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+                   "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+                   "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                   "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]})),
+    ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
+                                  "2020-01-01 03:00:00 GMT", "2020-01-01 04:00:00 ", "2020-01-01 05:00:00  ",
+                                  "2020-01-01 06:00:00  CET", "2020-01-01 07:00:00 Time", "2020-01-01 08:00:00 time",
+                                  "2020-01-01 09:00:00"],
+                    "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
+                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
+                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+                    "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
+      "text_date", None, None, "rank"],
+     pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
+                                 datetime(2020, 1, 1, 3, 0, 0), datetime(2020, 1, 1, 4, 0, 0),
+                                 datetime(2020, 1, 1, 5, 0, 0), datetime(2020, 1, 1, 6, 0, 0),
+                                 datetime(2020, 1, 1, 7, 0, 0)],
+                   "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
+                   "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
+                   "needs_urgent_attention_of_product_teams": ["1", "2", "4", "5", "6", "7", "8"],
+                   "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
+]
+
+
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
     *[(standardise_columns, *a) for a in args_function_returns_correctly_standardise_columns_returns_correctly],
@@ -113,7 +216,9 @@ args_function_returns_correctly = [
     *[(rank_tags, *a) for a in args_function_returns_correctly_rank_tags],
     *[(get_rank_statistic, *a) for a in args_function_returns_correctly_get_rank_statistic],
     *[(sort_and_drop_duplicates, *a) for a in args_function_returns_correctly_sort_and_drop_duplicates],
-    *[(concat_identical_columns, *a) for a in args_function_returns_correctly_concat_identical_columns]
+    *[(concat_identical_columns, *a) for a in args_function_returns_correctly_concat_identical_columns],
+    *[(extract_unique_tags, *a) for a in args_function_returns_correctly_extract_unique_tags],
+    *[(tagging_preprocessing, *a) for a in args_function_returns_correctly_tagging_preprocessing]
 ]
 
 
@@ -122,6 +227,8 @@ def test_function_returns_correctly(test_func: Callable[..., Union[pd.DataFrame,
                                     test_expected):
     """Test the a function, test_func, returns correctly, as long as test_func outputs a pandas DataFrame or Series."""
     if isinstance(test_expected, pd.DataFrame):
+        print(test_func(*test_input))
+        print(test_expected)
         assert_frame_equal(test_func(*test_input), test_expected)
     else:
         assert_series_equal(test_func(*test_input), test_expected)
@@ -217,3 +324,266 @@ class TestRankMultipleTags:
             # Assert the remaining keyword arguments are the `ii`-th element of `test_input_col_tags`,
             # `test_input_s_ranked`, and `test_input_set_tag_ranks`
             assert test_output_args[1:] == (test_input_col_tags[ii], test_input_s_ranked, test_input_set_tag_ranks)
+
+
+@pytest.fixture
+def resource_extract_unique_tags_integration(mocker, patch_rank_tags):
+    """Define a pytest fixture for the TestExtractUniqueTagsIntegration test class."""
+
+    # Patch various functions used by the `extract_unique_tags` function
+    patch_standardise_columns = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.standardise_columns")
+    patch_find_duplicated_rows = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.find_duplicated_rows")
+    patch_rank_rows = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.rank_rows")
+    patch_rank_multiple_tags = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.rank_multiple_tags")
+    patch_get_rank_statistic = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.get_rank_statistic")
+    patch_sort_and_drop_duplicates = mocker.patch(
+        "src.make_feedback_tagging.tagging_preprocessing.sort_and_drop_duplicates"
+    )
+    patch_concat_identical_columns = mocker.patch(
+        "src.make_feedback_tagging.tagging_preprocessing.concat_identical_columns",
+    )
+
+    # Ensure the last function has a return value for its `.duplicated().any()` method of False - this ensures the
+    # AssertionError is not tripped by the patches
+    patch_concat_identical_columns.return_value.duplicated().any.return_value = False
+
+    return {"patch_standardise_columns": patch_standardise_columns,
+            "patch_find_duplicated_rows": patch_find_duplicated_rows, "patch_rank_rows": patch_rank_rows,
+            "patch_rank_tags": patch_rank_tags, "patch_rank_multiple_tags": patch_rank_multiple_tags,
+            "patch_get_rank_statistic": patch_get_rank_statistic,
+            "patch_sort_and_drop_duplicates": patch_sort_and_drop_duplicates,
+            "patch_concat_identical_columns": patch_concat_identical_columns}
+
+
+# Define the test cases for the majority of arguments in the `TestExtractUniqueTagsIntegration` test class
+args_extract_unique_tags_integration = [
+    (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 1, 1], "col_b": [3, 4, 4], "col_tag1": [6, 7, 8],
+                   "col_tag2": [9, 10, 11]}), "col_key", None),
+    (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 0, 1], "col_b": [3, 3, 4], "col_tag1": [6, 7, 8],
+                   "col_tag2": [9, 10, 11]}), "col_key", ["col_tag1", "col_tag2"]),
+]
+
+# Define the test cases for the `test_input_out_col_rank_label` argument of the `TestExtractUniqueTagsIntegration` test
+# class
+args_extract_unique_tags_integration_out_col_rank_label = [
+    "rank", "hello", "world"
+]
+
+# Define the test cases for the `test_input_set_tag_ranks` argument of the `TestExtractUniqueTagsIntegration` test class
+args_extract_unique_tags_integration_set_tag_ranks = [
+    None, {"b": -1}, {"b": -2, "a": -1}
+]
+
+
+@pytest.mark.parametrize("test_input_df, test_input_col_key, test_input_col_tags", args_extract_unique_tags_integration)
+@pytest.mark.parametrize("test_input_out_col_rank_label", args_extract_unique_tags_integration_out_col_rank_label)
+@pytest.mark.parametrize("test_input_set_tag_ranks", args_extract_unique_tags_integration_set_tag_ranks)
+class TestExtractUniqueTagsIntegration:
+
+    def test_find_duplicated_rows_called_once_correctly(self, resource_extract_unique_tags_integration,
+                                                        test_input_df, test_input_col_key, test_input_col_tags,
+                                                        test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test the extract_unique_tags calls find_duplicated_rows once correctly."""
+
+        # Call the `extract_unique_tags` function
+        _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                test_input_out_col_rank_label)
+
+        # Assert `find_duplicated_rows` is called once
+        resource_extract_unique_tags_integration["patch_find_duplicated_rows"].assert_called_once()
+
+        # Get the call argument list, and extract the arguments and keyword arguments
+        test_output = resource_extract_unique_tags_integration["patch_find_duplicated_rows"].call_args_list
+        test_output_args, test_output_kwargs = test_output[0]
+
+        # Assert there are two arguments, and no keyword arguments
+        assert len(test_output_args) == 2
+        assert not test_output_kwargs
+
+        # Assert the first argument is the correct pandas DataFrame
+        assert_frame_equal(test_output_args[0], test_input_df)
+
+        # Define the expected second argument; if `test_input_col_tags` is None, this should be `COLS_TAGS`
+        if test_input_col_tags:
+            test_expected_arg_1 = [c for c in test_input_df.columns if c not in [test_input_col_key,
+                                                                                 *test_input_col_tags]]
+        else:
+            test_expected_arg_1 = [c for c in test_input_df.columns if c not in [test_input_col_key, *COLS_TAGS]]
+
+        # Assert the second argument is all columns in `test_input_df` that are not in `test_input_col_tags`
+        assert test_output_args[1] == test_expected_arg_1
+
+    def test_rank_rows_called_once_correctly(self, resource_extract_unique_tags_integration, test_input_df,
+                                             test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                             test_input_out_col_rank_label):
+        """Test the extract_unique_tags calls rank_rows once correctly."""
+
+        # Call the `extract_unique_tags` function
+        _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                test_input_out_col_rank_label)
+
+        # Assert the `rank_rows` function is called once with the expected call arguments
+        resource_extract_unique_tags_integration["patch_rank_rows"].assert_called_once_with(
+            resource_extract_unique_tags_integration["patch_find_duplicated_rows"].return_value,
+            test_input_col_key
+        )
+
+    def test_rank_multiple_tags_called_once_correctly(self, resource_extract_unique_tags_integration, test_input_df,
+                                                      test_input_col_key, test_input_col_tags,
+                                                      test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test the extract_unique_tags calls rank_multiple_tags once correctly."""
+
+        # Set `test_input_set_tag_ranks` to `ORDER_TAGS` if it is None
+        if not test_input_set_tag_ranks:
+            test_input_set_tag_ranks = ORDER_TAGS
+
+        # Call the `extract_unique_tags` function
+        _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                test_input_out_col_rank_label)
+
+        # Assert the `rank_multiple_tags` function is called once with the expected call arguments
+        resource_extract_unique_tags_integration["patch_rank_multiple_tags"].assert_called_once_with(
+            resource_extract_unique_tags_integration["patch_find_duplicated_rows"].return_value,
+            test_input_col_tags if test_input_col_tags else COLS_TAGS,
+            resource_extract_unique_tags_integration["patch_rank_rows"].return_value,
+            test_input_set_tag_ranks
+        )
+
+    def test_get_rank_statistic_called_once_correctly(self, resource_extract_unique_tags_integration, test_input_df,
+                                                      test_input_col_key, test_input_col_tags,
+                                                      test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test the extract_unique_tags calls get_rank_statistic once correctly."""
+
+        # Call the `extract_unique_tags` function
+        _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                test_input_out_col_rank_label)
+
+        # Assert the `get_rank_statistic` function is called once with the expected call arguments
+        resource_extract_unique_tags_integration["patch_get_rank_statistic"].assert_called_once_with(
+            resource_extract_unique_tags_integration["patch_rank_multiple_tags"].return_value
+        )
+
+    def test_sort_and_drop_duplicates_called_once_correctly(self, resource_extract_unique_tags_integration,
+                                                            test_input_df, test_input_col_key, test_input_col_tags,
+                                                            test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test the extract_unique_tags calls sort_and_drop_duplicates once correctly."""
+
+        # Call the `extract_unique_tags` function
+        _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                test_input_out_col_rank_label)
+
+        # Get the return value from `get_rank_statistic`
+        test_expected_grs = resource_extract_unique_tags_integration["patch_find_duplicated_rows"].return_value
+
+        # Get the return value from `find_duplicated_rows`
+        test_expected_fdr = resource_extract_unique_tags_integration["patch_find_duplicated_rows"].return_value
+
+        # Compile the expected pandas DataFrame argument `df` for the `sort_and_drop_duplicates` function
+        test_expected_df = test_expected_fdr.assign(**{test_input_out_col_rank_label: test_expected_grs})
+
+        # Define the expected `col_duplicates` arguments of the `sort_and_drop_duplicates` function; if
+        # test_input_col_tags` is None, this should be `COLS_TAGS`
+        if test_input_col_tags:
+            test_expected_col_duplicates = [c for c in test_input_df.columns if c not in [test_input_col_key,
+                                                                                          *test_input_col_tags]]
+        else:
+            test_expected_col_duplicates = [c for c in test_input_df.columns if c not in [test_input_col_key,
+                                                                                          *COLS_TAGS]]
+
+        # Assert the `sort_and_drop_duplicates` function is called once with the expected call arguments
+        resource_extract_unique_tags_integration["patch_sort_and_drop_duplicates"].assert_called_once_with(
+            test_expected_df,
+            test_input_out_col_rank_label,
+            test_expected_col_duplicates
+        )
+
+    def test_patch_concat_identical_columns_called_once_correctly(self, resource_extract_unique_tags_integration,
+                                                                  test_input_df, test_input_col_key,
+                                                                  test_input_col_tags, test_input_set_tag_ranks,
+                                                                  test_input_out_col_rank_label):
+        """Test the extract_unique_tags calls concat_identical_columns once correctly."""
+
+        # Call the `extract_unique_tags` function
+        _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                test_input_out_col_rank_label)
+
+        # Assert the `concat_identical_columns` function is called once
+        resource_extract_unique_tags_integration["patch_concat_identical_columns"].assert_called_once()
+
+        # Get the arguments and keyword arguments used to call the `concat_identical_columns` function of the
+        # singular call to it
+        test_output = resource_extract_unique_tags_integration["patch_concat_identical_columns"].call_args_list
+        test_output_args, test_output_kwargs = test_output[0]
+
+        # Assert that there are only two arguments and no keyword arguments
+        assert len(test_output_args) == 2
+        assert not test_output_kwargs
+
+        # Define the expected pandas DataFrame argument `df1` for the `concat_identical_columns` function; note this
+        # is an integration test, so does not actually check if the subset is is performed correctly - this will be
+        # done in unit/systems testing
+        test_expected_df1_bool = test_input_df.index.isin(
+            resource_extract_unique_tags_integration["patch_find_duplicated_rows"].return_value.index
+        )
+        test_expected_df1 = test_input_df[~test_expected_df1_bool]
+
+        # Assert the first keyword argument is the expected pandas DataFrame
+        assert_frame_equal(test_output_args[0], test_expected_df1)
+
+        # Define the expected second argument
+        test_expected_args_1 = resource_extract_unique_tags_integration["patch_sort_and_drop_duplicates"].return_value
+
+        # Assert the second keyword argument is the expected mock of a pandas DataFrame
+        assert test_output_args[1] == test_expected_args_1
+
+    def test_full_integration(self, resource_extract_unique_tags_integration, test_input_df, test_input_col_key,
+                              test_input_col_tags, test_input_set_tag_ranks, test_input_out_col_rank_label):
+        """Test the extract_unique_tags returns the correct function output."""
+
+        # Call the `extract_unique_tags` function
+        test_output = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags,
+                                          test_input_set_tag_ranks, test_input_out_col_rank_label)
+
+        # Assert `test_output` is the return value from a specific function
+        assert test_output == resource_extract_unique_tags_integration["patch_concat_identical_columns"].return_value
+
+
+# Define the test cases for the `TestExtractUniqueTagsRaisesAssertionError` test class
+args_extract_unique_tags_raises_assertion_if_duplicates_remain = [
+    (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 1, 1], "col_b": [3, 4, 4], "col_tag1": [6, 7, 8],
+                   "col_tag2": [9, 10, 11]}), "col_key", ["col_tag1", "col_tag2"], {"b": -1}),
+    (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 0, 1], "col_b": [3, 3, 4], "col_tag1": [6, 7, 8],
+                   "col_tag2": [9, 10, 11]}), "col_key", ["col_tag1", "col_tag2"], {"b": -2, "a": -1}),
+]
+
+
+@pytest.mark.parametrize("test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks",
+                         args_extract_unique_tags_raises_assertion_if_duplicates_remain)
+class TestExtractUniqueTagsRaisesAssertionError:
+
+    @pytest.mark.parametrize("test_input_out_col_rank_label", ["rank", "test"])
+    def test_raises_if_col_key_in_df(self, resource_extract_unique_tags_integration, test_input_df,
+                                     test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                     test_input_out_col_rank_label):
+        """Test extract_unique_tags raises an AssertionError if col_key is a column in df."""
+
+        # Add a column called `test_input_out_col_rank_label` into `test_input_df`
+        test_input_df_with_out_col_rank_label = test_input_df.assign(**{test_input_out_col_rank_label: None})
+
+        # Call the `extract_unique_tags` function, and check it raises an AssertionError
+        with pytest.raises(AssertionError, match="`out_col_rank_label` cannot be a column in `df`; please change this "
+                                                 f"input argument: {test_input_out_col_rank_label}"):
+            _ = extract_unique_tags(test_input_df_with_out_col_rank_label, test_input_col_key, test_input_col_tags,
+                                    test_input_set_tag_ranks, test_input_out_col_rank_label)
+
+    def test_raises_if_duplicates_remain(self, resource_extract_unique_tags_integration, test_input_df,
+                                         test_input_col_key, test_input_col_tags, test_input_set_tag_ranks):
+        """Test extract_unique_tags raises an AssertionError if there are still duplicates after processing."""
+
+        # Set the return value of the last function to `test_input_df`, assuming it has duplicate values
+        resource_extract_unique_tags_integration["patch_concat_identical_columns"].return_value = test_input_df
+
+        # Call the `extract_unique_tags` function, and check it raises an AssertionError
+        with pytest.raises(AssertionError, match="Duplicate values remain after processing!"):
+            _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
+                                    "rank")

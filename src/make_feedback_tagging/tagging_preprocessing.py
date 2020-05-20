@@ -1,7 +1,14 @@
 from functools import reduce
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
+import numpy as np
 import pandas
 import re
+
+# Define a default set of tag columns
+COLS_TAGS = ["this_response_relates_to_", "coronavirus_theme", "needs_urgent_attention_of_product_teams"]
+
+# Define an order of tags, where a lower value is less important
+ORDER_TAGS = {np.nan: -5, "duplicate": -4, "INTERNAL": -3, "none": -2, "ok": -1}
 
 
 def standardise_columns(df: pandas.DataFrame) -> pandas.DataFrame:
@@ -197,3 +204,79 @@ def concat_identical_columns(df1: pandas.DataFrame, df2: pandas.DataFrame) -> pa
 
     # Return the concatenation of `df1`, and `df2` across common columns, and sort the index in ascending order
     return pandas.concat([df1[cols_identical], df2[cols_identical]]).sort_index()
+
+
+def extract_unique_tags(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,
+                        set_tag_ranks: Optional[Dict[Union[float, str], int]] = None,
+                        out_col_rank_label: str = "rank") -> pandas.DataFrame:
+    """Extract unique tags for all rows in a pandas DataFrame, which might contain different tags for duplicated data.
+
+    The function operates as follows:
+
+    1. Find all the duplicate rows of `df` that are not in `col_key` or `col_tags`;
+    2. Sort `df` in descending order along `col_key`;
+    3. For each column in `col_tags`, rank each row of `df`. The ranking is determined by either Step 2 or,
+       if the value of the column already exists as a key in `set_tag_ranks`, use the value in `set_tag_ranks`. This
+       ensures certain tags have a set rank, whilst ranking all others by Step 2;
+    4. Calculate the rank statistic (geometric mean of ranks) for all `col_tags` ranks;
+    5. Drop the duplicates according to the rank from Step 4; and
+    6. Return a pandas DataFrame containing all the unique values from `df`, and the selected values from duplicate
+       rows of `df` (Step 5).
+
+    :param df: A pandas DataFrame, potentially containing duplicate data, where unique values are required.
+    :param col_key: A column in `df` for sorting the data in descending order.
+    :param col_tags: Default: None. A list of columns in `df` containing tags for each row. For duplicate rows, these
+        tags may be different. If None, will use a predefined list of columns - see the `COLS_TAGS` variable from
+        `src.make_feedback_tagging.tagging_preprocessing` for further information.
+    :param set_tag_ranks: Default: None. A dictionary of a predefined hierarchy or ranks for values in columns of
+        `col_tags`, which can be different to ranking order from `col_key`. The dictionary keys are values from
+        `col_tags`, and the dictionary values are their predefined rankings. Not all values of `col_tags` need to be
+        represented here - those that are missing will be replaced by their corresponding value from the ranking of
+        `col_key`. The values should all be less than 0, and in ascending order of priority. If None, will use a
+        predefined list of columns - see the `ORDER_TAGS` variable from
+        `src.make_feedback_tagging.tagging_preprocessing` for further information.
+    :param out_col_rank_label: Default: "rank". A column name used to store the rankings - this is not returned,
+        and is an internal variable; ensure you do not have a column named this in the `df`
+    :return: A pandas DataFrame of unique values, where the duplicated values in `df` are selected using a rank based
+        on the values columns in `col_tags`, and the sorting of `col_key`.
+
+    """
+
+    # Raise an AssertionError if `out_col_rank_label` is a column in `df`, as this is an internal variable
+    assert out_col_rank_label not in df.columns, "`out_col_rank_label` cannot be a column in `df`; please change " \
+                                                 f"this input argument: {out_col_rank_label}"
+
+    # Set `col_tags` to `COLS_TAGS` if it is None
+    if not col_tags:
+        col_tags = COLS_TAGS
+
+    # Set `set_tag_ranks` to `ORDER_TAGS` if it is None
+    if not set_tag_ranks:
+        set_tag_ranks = ORDER_TAGS
+
+    # Find all other columns in `df`
+    cols_others = [c for c in df.columns if c not in [col_key, *col_tags]]
+
+    # Get all the rows in `df` that have duplicated data in the `col_others` columns
+    df_duplicated = find_duplicated_rows(df, cols_others)
+
+    # Rank `df_duplicated` along its `col_key`
+    s_duplicated_rank = rank_rows(df_duplicated, col_key)
+
+    # Get the ranks for multiple tag columns, pre-populating pre-defined ranks for some entries, and using
+    # `s_duplicated_rank` for others
+    s_duplicated_ranked_tags = rank_multiple_tags(df_duplicated, col_tags, s_duplicated_rank, set_tag_ranks)
+
+    # Calculate the rank statistic (geometric mean of ranks) for the tag ranks, and assign the output to a column in
+    # `df_duplicated` called `out_col_rank_label`
+    df_duplicated = df_duplicated.assign(**{out_col_rank_label: get_rank_statistic(s_duplicated_ranked_tags)})
+
+    # Get a selected value from the duplicated data, based on the rankings in `out_col_rank_label`
+    df_selected = sort_and_drop_duplicates(df_duplicated, out_col_rank_label, cols_others)
+
+    # Get the combined unique values in `df`, alongside the selected values from the duplicated values in `df`
+    df_out = concat_identical_columns(df[~df.index.isin(df_duplicated.index)], df_selected)
+
+    # Assert that there are no duplicate rows of data in `cols_others`, before returning `df_out`
+    assert not df_out.duplicated(subset=cols_others, keep=False).any(), "Duplicate values remain after processing!"
+    return df_out

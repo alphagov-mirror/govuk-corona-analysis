@@ -1,6 +1,7 @@
 from src.make_feedback_tagging.tagging_preprocessing import (
     concat_identical_columns,
     convert_object_to_datetime,
+    extract_unique_tags,
     find_duplicated_rows,
     get_rank_statistic,
     rank_multiple_tags,
@@ -37,6 +38,7 @@ __all__ = [
     "create_phrase_level_columns",
     "drop_duplicate_rows",
     "extract_phrase_mentions",
+    "extract_unique_tags",
     "find_duplicated_rows",
     "get_rank_statistic",
     "preprocess_filter_comment_text",

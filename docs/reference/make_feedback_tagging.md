@@ -10,12 +10,15 @@ the `src/make_feedback_tagging` folder.
 
 ## Data processing
 
+### Composite functions
+
 ```eval_rst
 .. autosummary::
     :toctree: api/
     
     concat_identical_columns
     convert_object_to_datetime
+    extract_unique_tags
     find_duplicated_rows
     get_rank_statistic
     rank_multiple_tags
