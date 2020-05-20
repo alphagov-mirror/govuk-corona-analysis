@@ -3,6 +3,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
     find_duplicated_rows,
+    rank_multiple_tags,
     rank_rows,
     rank_tags,
     standardise_columns,
@@ -110,3 +111,70 @@ def test_rank_tags_raises_assertion_error(test_input_df, test_input_col_tag, tes
         with pytest.raises(AssertionError, match=f"'s_ranked', and 'df' must be the same length!: {ii:,} != "
                                                  f"{len(test_input_df):,}"):
             rank_tags(test_input_df, test_input_col_tag, test_input_s_ranked.iloc[:ii], test_input_set_tag_ranks)
+
+
+# Define test cases for to the `TestRankMulitpleTags` test class
+args_rank_multiple_tags = [
+    (pd.DataFrame({"col_tag1": ["a", "b", "c"], "col_tag2": ["b", "c", "d"], "data": [0, 1, 2]}),
+     ["col_tag1", "col_tag2"], pd.Series([1, 3, 2]), {"b": -1, "d": -2},
+     [pd.Series([3, 1, 4]), pd.Series([2, 6, 1])]),
+    (pd.DataFrame({"col_tag1": ["a", "b", "a", "c"], "col_tag2": ["b", "c", "d", "d"], "data": [0, 1, 2, 2]}),
+     ["col_tag1", "col_tag2"], pd.Series([1, 3, 2, 4]), {"b": -1, "d": -2},
+     [pd.Series([3, 1, 4, 6]), pd.Series([2, 6, 1, 1])])
+]
+
+
+@pytest.fixture
+def patch_rank_tags(mocker):
+    """Patch the rank_tags function."""
+    return mocker.patch("src.make_feedback_tagging.tagging_preprocessing.rank_tags")
+
+
+class TestRankMultipleTags:
+
+    @pytest.mark.parametrize("test_input_df, test_input_col_tags, test_input_s_ranked, test_set_tag_ranks, "
+                             "test_expected", args_rank_multiple_tags)
+    def test_returns_correctly(self, test_input_df, test_input_col_tags, test_input_s_ranked, test_set_tag_ranks,
+                               test_expected):
+        """Check that rank_multiple_tags returns correctly."""
+
+        # Invoke the `rank_multiple_tags` function
+        test_output = rank_multiple_tags(test_input_df, test_input_col_tags, test_input_s_ranked, test_set_tag_ranks)
+
+        # Assert `test_output`, and `test_expected` are the same length
+        assert len(test_output) == len(test_expected)
+
+        # Assert the values are as expected
+        for e, o in zip(test_expected, test_output):
+            assert_series_equal(e, o)
+
+    @pytest.mark.parametrize("test_input_df, test_input_col_tags, test_input_s_ranked, test_input_set_tag_ranks",
+                             [(*[a[:-1] for a in args_rank_multiple_tags])])
+    def test_calls_rank_tags_correctly(self, patch_rank_tags, test_input_df, test_input_col_tags, test_input_s_ranked,
+                                       test_input_set_tag_ranks):
+        """Check that rank_multiple_tags calls rank_tags correctly."""
+
+        # Invoke the `rank_multiple_tags` function
+        _ = rank_multiple_tags(test_input_df, test_input_col_tags, test_input_s_ranked, test_input_set_tag_ranks)
+
+        # Assert `rank_tags` is called the same number of times as the length of `test_input_col_tags`
+        assert patch_rank_tags.call_count == len(test_input_col_tags)
+
+        # Get the called arguments for `rank_tags`
+        test_output = patch_rank_tags.call_args_list
+
+        # Iterate over the arguments, and keyword arguments
+        for ii, (test_output_args, test_output_kwargs) in enumerate(test_output):
+
+            # Assert there are no keyword arguments
+            assert not test_output_kwargs
+
+            # Assert there are four keyword arguments
+            assert len(test_output_args) == 4
+
+            # Assert the first keyword argument is `test_input_df`
+            assert_frame_equal(test_output_args[0], test_input_df)
+
+            # Assert the remaining keyword arguments are the `ii`-th element of `test_input_col_tags`,
+            # `test_input_s_ranked`, and `test_input_set_tag_ranks`
+            assert test_output_args[1:] == (test_input_col_tags[ii], test_input_s_ranked, test_input_set_tag_ranks)

@@ -116,3 +116,31 @@ def rank_tags(df: pandas.DataFrame, col_tag: str, s_ranked: pandas.Series,
 
     # Adjust the ranks, so that the minimum value is 1
     return s_ranked_tag.add(abs(s_ranked_tag.min()) + 1) if s_ranked_tag.min() < 1 else s_ranked_tag
+
+
+def rank_multiple_tags(df: pandas.DataFrame, col_tags: List[str], s_ranked: pandas.Series,
+                       set_tag_ranks: Dict[Union[float, str], int]) -> List[pandas.Series]:
+    """Rank multiple tag columns using a predefined hierarchy, back-filled with calculated ranks.
+
+    The predefined hierarchy of ranks is a dictionary is used to set ranks based on the value of the `col_tags` columns
+    in `df`. This ensures that desirable/undesirable ranks are forced to a set rank. Any other values not listed in
+    the hierarchy are back-filled using already calculated ranks from `s_ranked`.
+
+    The outputted ranking is always a positive, and non-zero integer between 1 and n, where n is the largest possible
+    rank.
+
+    :param df: A pandas DataFrame for ranking.
+    :param col_tags: A list of column names from `df` that contain tags.
+    :param s_ranked: A pandas Series of calculated ranks that ignores the hierarchy.
+    :param set_tag_ranks: A dictionary of a predefined hierarchy or ranks for values in columns of `col_tags`,
+        which can be different to `s_ranked`. The dictionary keys are values from `col_tags`, and the dictionary values
+        are their predefined rankings. Not all values of `col_tags` need to be represented here - those that are
+        missing will be replaced by their corresponding value from `s_ranked`.
+    :return: A list of pandas Series, where each pandas Series corresponds to one column from `col_tags`. Each pandas
+        Series will have the ranks of that column in `col_tags` using a combination of predefined ranks from
+        `set_tag_ranks`, back-filled with calculated ranks from `s_ranked`.
+
+    """
+
+    # Rank all the tags, either by `s_ranked` or, if `col_tag` is a key in `set_tag_ranks`, the value of `set_tag_ranks`
+    return [rank_tags(df, col_tag, s_ranked, set_tag_ranks) for col_tag in col_tags]
