@@ -3,6 +3,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
     find_duplicated_rows,
+    get_rank_statistic,
     rank_multiple_tags,
     rank_rows,
     rank_tags,
@@ -68,6 +69,15 @@ args_function_returns_correctly_rank_tags = [
      pd.Series([1, 6, 9, 5]))
 ]
 
+# Define arguments for to test `get_rank_statistic` in the `test_function_returns_correctly` test
+args_function_returns_correctly_get_rank_statistic = [
+    ([[pd.Series([1, 2, 3]), pd.Series([3, 2, 1])]], pd.Series([1.7320508075688772, 2.0, 1.7320508075688772])),
+    ([[pd.Series([1, 2, 3]), pd.Series([3, 2, 1]), pd.Series([1, 3, 2])]],
+     pd.Series([1.4422495703074083, 2.2894284851066637, 1.8171205928321397])),
+    ([[pd.Series([1, 2, 3]), pd.Series([3, 2, 1]), pd.Series([1, 3, 2]), pd.Series([2, 1, 3])]],
+     pd.Series([1.5650845800732873, 1.8612097182041991, 2.0597671439071177])),
+]
+
 # Create the test cases for the `test_function_returns_correctly` test
 args_function_returns_correctly = [
     *[(standardise_columns, *a) for a in args_function_returns_correctly_standardise_columns_returns_correctly],
@@ -75,6 +85,7 @@ args_function_returns_correctly = [
     *[(find_duplicated_rows, *a) for a in args_function_returns_correctly_find_duplicated_rows],
     *[(rank_rows, *a) for a in args_function_returns_correctly_rank_rows],
     *[(rank_tags, *a) for a in args_function_returns_correctly_rank_tags],
+    *[(get_rank_statistic, *a) for a in args_function_returns_correctly_get_rank_statistic],
 ]
 
 

@@ -1,3 +1,4 @@
+from functools import reduce
 from typing import Dict, List, Union
 import pandas
 import re
@@ -144,3 +145,15 @@ def rank_multiple_tags(df: pandas.DataFrame, col_tags: List[str], s_ranked: pand
 
     # Rank all the tags, either by `s_ranked` or, if `col_tag` is a key in `set_tag_ranks`, the value of `set_tag_ranks`
     return [rank_tags(df, col_tag, s_ranked, set_tag_ranks) for col_tag in col_tags]
+
+
+def get_rank_statistic(s_ranked_tags: List[pandas.Series]) -> pandas.Series:
+    """Calculate the overall rank using the rank statistic for a list of ranks.
+
+    Uses the rank statistic, i.e. the geometric mean of the ranks, to calculate an overall rank.
+
+    :param s_ranked_tags: A list of pandas Series that each contain ranks.
+    :return: A pandas Series with the overall rank based on the rank statistic for all pandas Series in `s_ranked_tags`.
+
+    """
+    return reduce(lambda x, y: x.multiply(y), s_ranked_tags).pow(1 / float(len(s_ranked_tags)))

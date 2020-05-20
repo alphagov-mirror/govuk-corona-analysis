@@ -1,6 +1,7 @@
 from src.make_feedback_tagging.tagging_preprocessing import (
     convert_object_to_datetime,
     find_duplicated_rows,
+    get_rank_statistic,
     rank_multiple_tags,
     rank_rows,
     rank_tags,
@@ -34,6 +35,7 @@ __all__ = [
     "drop_duplicate_rows",
     "extract_phrase_mentions",
     "find_duplicated_rows",
+    "get_rank_statistic",
     "preprocess_filter_comment_text",
     "regex_category_identification",
     "regex_group_verbs",
