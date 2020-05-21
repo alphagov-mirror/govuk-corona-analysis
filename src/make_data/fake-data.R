@@ -36,6 +36,9 @@ total_flags <- 8
 # Percentage to appear in NHS list only
 nhs_perc <- .2
 
+# Percentage to appear in the NHS deductions list
+nhs_deductions_perc <- .05
+
 # Percentage to appear in Web list only
 web_perc <- .2
 
@@ -270,10 +273,12 @@ write.csv(x = master, file = here("data/fake-data/master.csv"), quote = TRUE, ro
 # Individual lists -------------------------------------------------------------
 
 nhs_list <- sample_frac(master, nhs_perc + nhs_and_web_perc)
+nhs_deductions_list <- sample_frac(master, nhs_deductions_perc)
 web_list <- sample_frac(master, web_perc + nhs_and_web_perc)
 ivr_list <- sample_frac(nhs_list, ivr_perc)
 
 nhs_list <- select_at(nhs_list, vars(Traced_NHSNUMBER:InceptionDate))
+nhs_deductions_list <- select_at(nhs_deductions_list, vars(Traced_NHSNUMBER:InceptionDate))
 web_list <- select_at(web_list, vars(live_in_england:created_at))
 ivr_list <- select_at(ivr_list, vars(ivr_nhs_number:ivr_umet_needs))
 
@@ -328,7 +333,8 @@ drop_ivr_web <-
 
 ## 3. rowbind to original lists
 nhs_list <-
-  bind_rows(nhs_list)
+  nhs_list %>%
+  anti_join(nhs_deductions_list, by = "Traced_NHSNUMBER")
 
 web_list <-
   bind_rows(
@@ -346,5 +352,6 @@ ivr_list <-
   )
 
 write.csv(x = nhs_list, file = here("data/fake-data/nhs.csv"), quote = TRUE, row.names = FALSE)
+write.csv(x = nhs_deductions_list, file = here("data/fake-data/nhs-deductions.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = web_list, file = here("data/fake-data/web.csv"), quote = TRUE, row.names = FALSE)
 write.csv(x = ivr_list, file = here("data/fake-data/ivr.csv"), quote = TRUE, row.names = FALSE)
