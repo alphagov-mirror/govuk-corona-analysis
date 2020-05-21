@@ -5,7 +5,7 @@ import pandas
 import re
 
 # Define a default set of tag columns
-COLS_TAGS = ["this_response_relates_to_", "coronavirus_theme", "needs_urgent_attention_of_product_teams"]
+COLS_TAGS = ["this_response_relates_to_", "coronavirus_theme"]
 
 # Define an order of tags, where a lower value is less important
 ORDER_TAGS = {np.nan: -5, "duplicate": -4, "INTERNAL": -3, "none": -2, "ok": -1}

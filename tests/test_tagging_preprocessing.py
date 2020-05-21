@@ -118,7 +118,6 @@ args_function_returns_correctly_extract_unique_tags = [
                                   datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
                     "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
-                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                     "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}),
       "text_date", None, None, "rank"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
@@ -128,7 +127,6 @@ args_function_returns_correctly_extract_unique_tags = [
                                  datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
                    "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
-                   "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                    "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]})),
     ([pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
                                   datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
@@ -137,7 +135,6 @@ args_function_returns_correctly_extract_unique_tags = [
                                   datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
                     "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
-                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                     "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
       "text_date", None, None, "rank"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
@@ -146,7 +143,6 @@ args_function_returns_correctly_extract_unique_tags = [
                                  datetime(2020, 1, 1, 7, 0, 0)],
                    "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
                    "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
-                   "needs_urgent_attention_of_product_teams": ["1", "2", "4", "5", "6", "7", "8"],
                    "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7]))),
     ([pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
                                   datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
@@ -155,7 +151,6 @@ args_function_returns_correctly_extract_unique_tags = [
                                   datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
                     "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
-                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                     "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
       "text_date", COLS_TAGS, ORDER_TAGS, "rank"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
@@ -164,7 +159,6 @@ args_function_returns_correctly_extract_unique_tags = [
                                  datetime(2020, 1, 1, 7, 0, 0)],
                    "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
                    "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
-                   "needs_urgent_attention_of_product_teams": ["1", "2", "4", "5", "6", "7", "8"],
                    "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
 ]
 
@@ -176,7 +170,6 @@ args_function_returns_correctly_tagging_preprocessing = [
                                   "2020-01-01 09:00:00"],
                     "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
-                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                     "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}),
       "text_date", None, None, "rank"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
@@ -186,7 +179,6 @@ args_function_returns_correctly_tagging_preprocessing = [
                                  datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
                    "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
-                   "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                    "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]})),
     ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
                                   "2020-01-01 03:00:00 GMT", "2020-01-01 04:00:00 ", "2020-01-01 05:00:00  ",
@@ -194,7 +186,6 @@ args_function_returns_correctly_tagging_preprocessing = [
                                   "2020-01-01 09:00:00"],
                     "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
-                    "needs_urgent_attention_of_product_teams": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
                     "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
       "text_date", None, None, "rank"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
@@ -203,7 +194,6 @@ args_function_returns_correctly_tagging_preprocessing = [
                                  datetime(2020, 1, 1, 7, 0, 0)],
                    "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
                    "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
-                   "needs_urgent_attention_of_product_teams": ["1", "2", "4", "5", "6", "7", "8"],
                    "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
 ]
 
