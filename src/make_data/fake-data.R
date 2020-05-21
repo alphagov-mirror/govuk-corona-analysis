@@ -97,7 +97,7 @@ nhs_gp_practice_codes <-
 ccg_codes <-
   here("data/ccg-codes/Clinical_Commissioning_Groups_April_2020_Names_and_Codes_in_England.csv") %>%
   read_csv() %>%
-  select(1:3) %>%
+  select(-FID) %>%
   rename(ward = CCG20CD,
          ccgcode = CCG20CDH,
          ccgname = CCG20NM)
