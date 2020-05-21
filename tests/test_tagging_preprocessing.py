@@ -189,10 +189,18 @@ args_function_returns_correctly_extract_lemma = [
 
 # Define arguments for to test `clean_text` in the `test_function_returns_correctly` test
 args_function_returns_correctly_clean_text = [
-    ([pd.Series(["Some text with [symbols] and one (or) two stopwords +*"])],
-     pd.Series(["Some text symbols one two stopwords"])),
-    ([pd.Series(["Some text with [symbols] and one (or) two stopwords +*"]), ["stopwords"]],
-     pd.Series(["Some text with symbols and one or two"]))
+    ([pd.DataFrame({"col1": ["Some text with [symbols] and one (or) two stopwords"], "col2": ["PII [DATE_OF_BIRTH]"]}),
+      ["col1", "col2"]],
+     pd.DataFrame({"col1": ["some text with [symbols] and one (or) two stopwords"], "col2": ["pii "],
+                   "lemma": ["text symbol one two stopword pii"]})),
+    ([pd.DataFrame({"col1": ["Some text with [symbols] and one (or) two stopwords"], "col2": ["PII [DATE_OF_BIRTH]"]}),
+      ["col1", "col2"], "test"],
+     pd.DataFrame({"col1": ["some text with [symbols] and one (or) two stopwords"], "col2": ["pii "],
+                   "test": ["text symbol one two stopword pii"]})),
+    ([pd.DataFrame({"col1": ["Some text with [symbols] and one (or) two stopwords"], "col2": ["PII [DATE_OF_BIRTH]"]}),
+      ["col1", "col2"], "lemma", ["stopwords"]],
+     pd.DataFrame({"col1": ["some text with [symbols] and one (or) two stopwords"], "col2": ["pii "],
+                   "lemma": ["some text with symbol and one or two pii"]})),
 ]
 
 # Define arguments for to test `tagging_preprocessing` in the `test_function_returns_correctly` test
@@ -255,8 +263,6 @@ def test_function_returns_correctly(test_func: Callable[..., Union[pd.DataFrame,
                                     test_expected):
     """Test the a function, test_func, returns correctly, as long as test_func outputs a pandas DataFrame or Series."""
     if isinstance(test_expected, pd.DataFrame):
-        print(test_func(*test_input))
-        print(test_expected)
         assert_frame_equal(test_func(*test_input), test_expected)
     else:
         assert_series_equal(test_func(*test_input), test_expected)
@@ -615,6 +621,97 @@ class TestExtractUniqueTagsRaisesAssertionError:
         with pytest.raises(AssertionError, match="Duplicate values remain after processing!"):
             _ = extract_unique_tags(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
                                     "rank")
+
+
+# Define test cases for the `TestCleanTextIntegration` test class
+args_clean_text_integration = [
+    (pd.DataFrame({"col_1": ["a", "b", "c"], "col_2": ["D", "E", "F"]}), ["col_1", "col_2"], "lemma", None)
+]
+
+
+@pytest.fixture
+def resource_clean_text_integration(mocker):
+    """Define patches for the TestCleanTextIntegration test class"""
+
+    # Patch functions called by `clean_text`
+    patch_remove_pii = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.remove_pii")
+    patch_compile_free_text = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.compile_free_text")
+    patch_parallelise_pandas = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.parallelise_pandas")
+    patch_assign = mocker.patch("pandas.DataFrame.assign")
+
+    return {"patch_remove_pii": patch_remove_pii, "patch_compile_free_text": patch_compile_free_text,
+            "patch_parallelise_pandas": patch_parallelise_pandas, "patch_assign": patch_assign}
+
+
+@pytest.mark.parametrize("test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords",
+                         args_clean_text_integration)
+@pytest.mark.parametrize("test_input_n_cores", [None, 1])
+class TestCleanTextIntegration:
+
+    def test_remove_pii_called_correctly(self, resource_clean_text_integration, test_input_df,
+                                         test_input_cols_free_text, test_input_out_col, test_input_stopwords,
+                                         test_input_n_cores):
+        """Test that clean_text calls remove_pii correctly."""
+
+        # Call the `clean_text` function
+        _ = clean_text(test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords,
+                       test_input_n_cores)
+
+        # Assert that `remove_pii` is called the expected number of times
+        assert resource_clean_text_integration["patch_remove_pii"].call_count == len(test_input_cols_free_text)
+
+        # Get the called arguments list for `remove_pii`
+        test_output = resource_clean_text_integration["patch_remove_pii"].call_args_list
+
+        # Iterate over the arguments and keyword arguments for each call of `remove_pii` alongside the corresponding
+        # elements of `test_input_cols_free_text`
+        for col, (test_output_args, test_output_kwargs) in zip(test_input_cols_free_text, test_output):
+
+            # Assert that there is only one argument, and no keyword arguments
+            assert len(test_output_args) == 1
+            assert not test_output_kwargs
+
+            # Assert that the only argument is `col` from `test_input_df`
+            assert_series_equal(test_output_args[0], test_input_df[col])
+
+    def test_compile_free_text_called_once_correctly(self, resource_clean_text_integration, test_input_df,
+                                                     test_input_cols_free_text, test_input_out_col,
+                                                     test_input_stopwords, test_input_n_cores):
+        """Test that clean_text calls compile_free_text correctly."""
+
+        # Call the `clean_text` function
+        _ = clean_text(test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords,
+                       test_input_n_cores)
+
+        # Assert `compile_free_text` is called once only with the correct arguments
+        resource_clean_text_integration["patch_compile_free_text"].assert_called_once_with(
+            resource_clean_text_integration["patch_assign"].return_value, test_input_cols_free_text
+        )
+
+    def test_parallelise_pandas_called_once_correctly(self, resource_clean_text_integration, test_input_df,
+                                                      test_input_cols_free_text, test_input_out_col,
+                                                      test_input_stopwords, test_input_n_cores):
+        """Test that clean_text calls parallelise_pandas correctly."""
+
+        # Call the `clean_text` function
+        _ = clean_text(test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords,
+                       test_input_n_cores)
+
+        # Assert that `parallelise_pandas` is called once correctly
+        resource_clean_text_integration["patch_parallelise_pandas"].assert_called_once_with(
+            resource_clean_text_integration["patch_compile_free_text"].return_value.apply.return_value,
+            extract_lemma, test_input_n_cores
+        )
+
+
+# Define the test cases for the majority of arguments in the `TestTaggingPreProcessingIntegration` test class
+args_tagging_preprocessing_integration = [
+    (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 1, 1], "col_b": [3, 4, 4], "col_tag1": [6, 7, 8],
+                   "col_tag2": [9, 10, 11], "free_text": ["a", "b", "c"]}), ["free_text"], "col_key", None),
+    (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 0, 1], "col_b": [3, 3, 4], "col_tag1": [6, 7, 8],
+                   "col_tag2": [9, 10, 11], "free_text": ["a", "b", "c"]}), "free_text", "col_key",
+     ["col_tag1", "col_tag2"])
+]
 
 
 @pytest.fixture

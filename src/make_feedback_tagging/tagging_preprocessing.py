@@ -1,6 +1,7 @@
 from functools import reduce
 from nltk.corpus import stopwords
 from src.make_feedback_tool_data.preprocess import PreProcess
+from src.utils.parallelise_pandas import parallelise_pandas
 from tqdm import tqdm
 from typing import Dict, List, Optional, Union
 import numpy as np
@@ -326,14 +327,24 @@ def extract_lemma(s: pandas.Series) -> pandas.Series:
     return s.progress_map(lambda t: " ".join([p[2] for tags in PreProcess.part_of_speech_tag(t) for p in tags]))
 
 
-def clean_text(s: pandas.Series, stop_words: Optional[List[str]] = None) -> pandas.Series:
-    """Remove stop words and certain symbols from a pandas Series of text.
+def clean_text(df: pandas.DataFrame, cols_free_text: List[str], out_col: str = "lemma",
+               stop_words: Optional[List[str]] = None, n_cores: Optional[int] = None) -> pandas.DataFrame:
+    """Clean free text columns in a pandas DataFrame.
 
-    Symbols that are removed are any of (, ), [, ], +, and *.
+    Cleaning process involves:
 
-    :param s: A pandas Series of text.
+    1. Removal of personally identifiable information (PII), and setting text to lowercase;
+    2. Compiling all free text columns together into a single column; and
+    3. Removing stop words, and certain symbols; and
+    4. Extracting the lemma of the resultant text from Step 3.
+
+    :param df: A pandas DataFrame
+    :param cols_free_text: A list of columns in `df` that contain free text, which requires cleaning.
+    :param out_col: Default: "lemma", the resultant, cleaned column of text that will be outputted in `df`.
     :param stop_words: Default: None. A list of stop words. If None, will use nltk.corpus.stopwords.
-    :return: A pandas Series with stop words, and certain symbols removed.
+    :param n_cores: Default: None. Number of processors to parallelise operations over. If None, will use the maximum
+        number of available processors.
+    :return: A copy of `df` with an additional column `out_col` containing the cleaned text.
 
     """
 
@@ -341,8 +352,22 @@ def clean_text(s: pandas.Series, stop_words: Optional[List[str]] = None) -> pand
     if not stop_words:
         stop_words = STOPWORDS
 
+    # Remove PII from the free text columns, and set them to lowercase
+    df_out = df.assign(**{c: remove_pii(df[c]) for c in cols_free_text})
+
+    # Compile the free text column
+    s_free_text = compile_free_text(df_out, cols_free_text)
+
     # Strip out some symbols, split the text into words, and then recompile without stop words
-    return s.apply(lambda x: " ".join(t for t in re.sub(r"[()\[\]+*]", "", x).split() if t not in stop_words))
+    s_rm_stop_words = s_free_text.apply(
+        lambda x: " ".join(t for t in re.sub(r"[()\[\]+*]", "", x).split() if t not in stop_words)
+    )
+
+    # Extract the lemma from `s_rm_stop_words` - do this in parallel
+    s_lemma = parallelise_pandas(s_rm_stop_words, extract_lemma, n_cores)
+
+    # Return `df_out` with `s_lemma`
+    return df_out.assign(**{out_col: s_lemma})
 
 
 def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,
