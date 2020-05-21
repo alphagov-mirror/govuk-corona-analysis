@@ -30,6 +30,8 @@ from src.make_feedback_tool_data.regex_categorisation import (
     regex_for_theme
 )
 from src.make_feedback_tool_data.text_chunking import ChunkParser
+from src.utils.parallelise_pandas import parallelise_pandas
+from src.utils.regex import coronavirus_misspellings_and_typos_regex
 
 __all__ = [
     "Chunk",
@@ -40,6 +42,7 @@ __all__ = [
     "compile_free_text",
     "concat_identical_columns",
     "convert_object_to_datetime",
+    "coronavirus_misspellings_and_typos_regex",
     "create_dataset",
     "create_phrase_level_columns",
     "drop_duplicate_rows",
@@ -47,6 +50,7 @@ __all__ = [
     "extract_unique_tags",
     "find_duplicated_rows",
     "get_rank_statistic",
+    "parallelise_pandas",
     "preprocess_filter_comment_text",
     "regex_category_identification",
     "regex_group_verbs",

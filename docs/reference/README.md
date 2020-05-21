@@ -8,5 +8,6 @@ This page gives an overview of all public objects, functions, and methods in the
 
     make_feedback_tagging.md
     make_feedback_tool_data.md
+    utils.md
 
 ```
