@@ -277,13 +277,6 @@ nhs_list <- select_at(nhs_list, vars(Traced_NHSNUMBER:InceptionDate))
 web_list <- select_at(web_list, vars(live_in_england:created_at))
 ivr_list <- select_at(ivr_list, vars(ivr_nhs_number:ivr_umet_needs))
 
-## 1. create row duplicates
-nhs_list_dupe_real <- sample_frac(tbl = nhs_list, size = nhs_perc/2, replace = TRUE)
-
-## 2. create change of status 'duplicates'
-nhs_list_dupe_changestatus <- nhs_list_dupe_real %>%
-  mutate_at(.vars = vars(starts_with(match = "flag_")), .funs = list(~ ifelse(. == "1", "0", "1")))
-
 # More requirements of different types of duplicates and overlaps
 #
 # Web Data : Duplicate entries with same nhs number matching BOTH nhs dataset and ivr dataset.
@@ -335,9 +328,7 @@ drop_ivr_web <-
 
 ## 3. rowbind to original lists
 nhs_list <-
-  bind_rows(nhs_list,
-            nhs_list_dupe_real,
-            nhs_list_dupe_changestatus)
+  bind_rows(nhs_list)
 
 web_list <-
   bind_rows(
