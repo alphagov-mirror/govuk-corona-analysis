@@ -1,4 +1,5 @@
 from functools import reduce
+from nltk.corpus import stopwords
 from src.make_feedback_tool_data.preprocess import PreProcess
 from typing import Dict, List, Optional, Union
 import numpy as np
@@ -10,6 +11,9 @@ COLS_TAGS = ["this_response_relates_to_", "coronavirus_theme"]
 
 # Define an order of tags, where a lower value is less important
 ORDER_TAGS = {np.nan: -5, "duplicate": -4, "INTERNAL": -3, "none": -2, "ok": -1}
+
+# Get a list of stopwords
+STOPWORDS = list(stopwords.words('english'))
 
 
 def standardise_columns(df: pandas.DataFrame) -> pandas.DataFrame:
@@ -305,6 +309,25 @@ def compile_free_text(df: pandas.DataFrame, cols_free_text: List[str], sep: str 
 
     """
     return df[cols_free_text].agg(sep.join, axis=1)
+
+
+def clean_text(s: pandas.Series, stop_words: Optional[List[str]] = None) -> pandas.Series:
+    """Remove stop words and certain symbols from a pandas Series of text.
+
+    Symbols that are removed are any of (, ), [, ], +, and *.
+
+    :param s: A pandas Series of text.
+    :param stop_words: Default: None. A list of stop words. If None, will use nltk.corpus.stopwords.
+    :return: A pandas Series with stop words, and certain symbols removed.
+
+    """
+
+    # If `stop_words` is None, use `STOPWORDS`
+    if not stop_words:
+        stop_words = STOPWORDS
+
+    # Strip out some symbols, split the text into words, and then recompile without stop words
+    return s.apply(lambda x: " ".join(t for t in re.sub(r"[()\[\]+*]", "", x).split() if t not in stop_words))
 
 
 def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,

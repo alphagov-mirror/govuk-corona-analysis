@@ -3,6 +3,7 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 from src.make_feedback_tagging.tagging_preprocessing import (
     COLS_TAGS,
     ORDER_TAGS,
+    clean_text,
     compile_free_text,
     concat_identical_columns,
     convert_object_to_datetime,
@@ -179,6 +180,14 @@ args_function_returns_correctly_compile_free_text = [
      pd.Series(["a--d", "b--e", "c--f"])),
 ]
 
+# Define arguments for to test `clean_text` in the `test_function_returns_correctly` test
+args_function_returns_correctly_clean_text = [
+    ([pd.Series(["Some text with [symbols] and one (or) two stopwords +*"])],
+     pd.Series(["Some text symbols one two stopwords"])),
+    ([pd.Series(["Some text with [symbols] and one (or) two stopwords +*"]), ["stopwords"]],
+     pd.Series(["Some text with symbols and one or two"]))
+]
+
 # Define arguments for to test `tagging_preprocessing` in the `test_function_returns_correctly` test
 args_function_returns_correctly_tagging_preprocessing = [
     ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
@@ -228,6 +237,7 @@ args_function_returns_correctly = [
     *[(extract_unique_tags, *a) for a in args_function_returns_correctly_extract_unique_tags],
     *[(remove_pii, *a) for a in args_function_returns_correctly_remove_pii],
     *[(compile_free_text, *a) for a in args_function_returns_correctly_compile_free_text],
+    *[(clean_text, *a) for a in args_function_returns_correctly_clean_text],
     *[(tagging_preprocessing, *a) for a in args_function_returns_correctly_tagging_preprocessing]
 ]
 
