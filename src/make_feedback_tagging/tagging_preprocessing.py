@@ -1,10 +1,13 @@
 from functools import reduce
 from nltk.corpus import stopwords
 from src.make_feedback_tool_data.preprocess import PreProcess
+from tqdm import tqdm
 from typing import Dict, List, Optional, Union
 import numpy as np
 import pandas
 import re
+
+tqdm.pandas()
 
 # Define a default set of tag columns
 COLS_TAGS = ["this_response_relates_to_", "coronavirus_theme"]
@@ -309,6 +312,18 @@ def compile_free_text(df: pandas.DataFrame, cols_free_text: List[str], sep: str 
 
     """
     return df[cols_free_text].agg(sep.join, axis=1)
+
+
+def extract_lemma(s: pandas.Series) -> pandas.Series:
+    """Extract lemma from a pandas Series of text.
+
+    Leverages parallel processing and the `src.PreProcess.part_of_speech_tag` method to extract lemma.
+
+    :param s: A pandas Series of text.
+    :return: A pandas Series of the lemmas in `s`.
+
+    """
+    return s.progress_map(lambda t: " ".join([p[2] for tags in PreProcess.part_of_speech_tag(t) for p in tags]))
 
 
 def clean_text(s: pandas.Series, stop_words: Optional[List[str]] = None) -> pandas.Series:

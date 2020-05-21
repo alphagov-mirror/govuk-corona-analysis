@@ -30,6 +30,7 @@ the `src/make_feedback_tagging` folder.
     compile_free_text
     concat_identical_columns
     convert_object_to_datetime
+    extract_lemma
     extract_unique_tags
     find_duplicated_rows
     get_rank_statistic

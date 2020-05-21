@@ -7,6 +7,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     compile_free_text,
     concat_identical_columns,
     convert_object_to_datetime,
+    extract_lemma,
     extract_unique_tags,
     find_duplicated_rows,
     get_rank_statistic,
@@ -180,6 +181,12 @@ args_function_returns_correctly_compile_free_text = [
      pd.Series(["a--d", "b--e", "c--f"])),
 ]
 
+# Define arguments for to test `extract_lemma` in the `test_function_returns_correctly` test
+args_function_returns_correctly_extract_lemma = [
+    ([pd.Series(["Some text where we would like the lemmas"])],
+     pd.Series(["some text where -PRON- would like the lemmas"]))
+]
+
 # Define arguments for to test `clean_text` in the `test_function_returns_correctly` test
 args_function_returns_correctly_clean_text = [
     ([pd.Series(["Some text with [symbols] and one (or) two stopwords +*"])],
@@ -237,6 +244,7 @@ args_function_returns_correctly = [
     *[(extract_unique_tags, *a) for a in args_function_returns_correctly_extract_unique_tags],
     *[(remove_pii, *a) for a in args_function_returns_correctly_remove_pii],
     *[(compile_free_text, *a) for a in args_function_returns_correctly_compile_free_text],
+    *[(extract_lemma, *a) for a in args_function_returns_correctly_extract_lemma],
     *[(clean_text, *a) for a in args_function_returns_correctly_clean_text],
     *[(tagging_preprocessing, *a) for a in args_function_returns_correctly_tagging_preprocessing]
 ]
