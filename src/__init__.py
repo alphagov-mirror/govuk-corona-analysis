@@ -7,6 +7,7 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     rank_multiple_tags,
     rank_rows,
     rank_tags,
+    remove_pii,
     sort_and_drop_duplicates,
     standardise_columns,
     tagging_preprocessing
@@ -49,6 +50,7 @@ __all__ = [
     "rank_multiple_tags",
     "rank_rows",
     "rank_tags",
+    "remove_pii",
     "save_intermediate_df",
     "sort_and_drop_duplicates",
     "standardise_columns",

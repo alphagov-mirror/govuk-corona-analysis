@@ -11,10 +11,12 @@ from src.make_feedback_tagging.tagging_preprocessing import (
     rank_multiple_tags,
     rank_rows,
     rank_tags,
+    remove_pii,
     sort_and_drop_duplicates,
     standardise_columns,
     tagging_preprocessing
 )
+from src.make_feedback_tool_data.preprocess import PII_FILTERED
 from typing import Callable, Union
 import numpy as np
 import pandas as pd
@@ -162,6 +164,12 @@ args_function_returns_correctly_extract_unique_tags = [
                    "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
 ]
 
+# Define arguments for to test `remove_pii` in the `test_function_returns_correctly` test
+args_function_returns_correctly_remove_pii = [
+    ([pd.Series(["Text with no PII", *[f"Text with [{p}]" for p in PII_FILTERED]])],
+     pd.Series(["text with no pii", *["text with "] * len(PII_FILTERED)]))
+]
+
 # Define arguments for to test `tagging_preprocessing` in the `test_function_returns_correctly` test
 args_function_returns_correctly_tagging_preprocessing = [
     ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
@@ -209,6 +217,7 @@ args_function_returns_correctly = [
     *[(sort_and_drop_duplicates, *a) for a in args_function_returns_correctly_sort_and_drop_duplicates],
     *[(concat_identical_columns, *a) for a in args_function_returns_correctly_concat_identical_columns],
     *[(extract_unique_tags, *a) for a in args_function_returns_correctly_extract_unique_tags],
+    *[(remove_pii, *a) for a in args_function_returns_correctly_remove_pii],
     *[(tagging_preprocessing, *a) for a in args_function_returns_correctly_tagging_preprocessing]
 ]
 

@@ -34,6 +34,7 @@ the `src/make_feedback_tagging` folder.
     rank_multiple_tags
     rank_rows
     rank_tags
+    remove_pii
     sort_and_drop_duplicates
     standardise_columns
 

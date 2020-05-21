@@ -1,4 +1,5 @@
 from functools import reduce
+from src.make_feedback_tool_data.preprocess import PreProcess
 from typing import Dict, List, Optional, Union
 import numpy as np
 import pandas
@@ -281,6 +282,17 @@ def extract_unique_tags(df: pandas.DataFrame, col_key: str = "text_date", col_ta
     assert not df_out.duplicated(subset=cols_others, keep=False).any(), "Duplicate values remain after processing!"
     return df_out
 
+
+def remove_pii(s: pandas.Series) -> pandas.Series:
+    """Strip personally identifiable information (PII) from a pandas Series.
+
+    Uses the src.PreProcess.replace_pii_regex method to clean PII.
+
+    :param s: A pandas Series potentially containing PII.
+    :return: `s` with any PII removed from it.
+
+    """
+    return s.replace(np.nan, "", regex=True).map(PreProcess.replace_pii_regex).str.lower()
 
 def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,
                           set_tag_ranks: Optional[Dict[Union[float, str], int]] = None,
