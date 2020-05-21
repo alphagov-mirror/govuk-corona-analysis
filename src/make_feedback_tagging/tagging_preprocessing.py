@@ -370,21 +370,25 @@ def clean_text(df: pandas.DataFrame, cols_free_text: List[str], out_col: str = "
     return df_out.assign(**{out_col: s_lemma})
 
 
-def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,
-                          set_tag_ranks: Optional[Dict[Union[float, str], int]] = None,
-                          out_col_rank_label: str = "rank") -> pandas.DataFrame:
+def tagging_preprocessing(df: pandas.DataFrame, cols_free_text: List[str], col_key: str = "text_date",
+                          col_tags: Optional[List[str]] = None,
+                          set_tag_ranks: Optional[Dict[Union[float, str], int]] = None, out_col_lemma: str = "lemma",
+                          col_rank_label: str = "rank") -> pandas.DataFrame:
     """Preprocess the manually tagged data.
 
     The function operates as follows:
 
     1. Replace all punctuation in the column headers of `df` with an underscore; adjacent punctuation will all be
        replaced by a single underscore;
-    2. Convert the datetime-like string column `col_key` of `df` into a datetime pandas Series; and
-    3. Return unique values from `df` across the columns not in `col_key` or `col_tags`, selecting a specific row for
-       duplicate data - see the `src.extract_unique_tags` function for more information.
+    2. Convert the datetime-like string column `col_key` of `df` into a datetime pandas Series;
+    3. Unique values from `df` across the columns not in `col_key` or `col_tags`, selecting a specific row for
+       duplicate data - see the `src.extract_unique_tags` function for more information; and
+    4. Removal of all personally identifiable information (PII) in the `cols_free_text` columns, all text in these
+       columns to lowercase, and a new column `out_col_lemma` with the lemmatised text compiled together with stop
+       words removed.
 
-
-    :param df: A pandas DataFrame containing
+    :param df: A pandas DataFrame potentially containing  duplicate data.
+    :param cols_free_text: A list of columns in `df` that contain free text, which requires cleaning.
     :param col_key: Default: "text_date". A unique key column in `df` containing strings that start with the datetime
         format "YYYY-mm-dd HH:MM:SS".
     :param col_tags: Default: None. A list of columns in `df` containing tags for each row. For duplicate rows, these
@@ -397,11 +401,15 @@ def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_
         `col_key`. The values should all be less than 0, and in ascending order of priority. If None, will use a
         predefined list of columns - see the `ORDER_TAGS` variable from
         `src.make_feedback_tagging.tagging_preprocessing` for further information.
-    :param out_col_rank_label: Default: "rank". A column name used to store the rankings - this is not returned,
-        and is an internal variable; ensure you do not have a column named this in the `df`
+    :param out_col_lemma: Default: "lemma". An extra column outputted in `df` that contains the compiled, lemmatised
+        free text.
+    :param col_rank_label: Default: "rank". A column name used to store the rankings - this is not returned, and is an
+        internal variable; ensure you do not have a column named this in the `df`
     :return: A pandas DataFrame of unique values, where the duplicated values in `df` are selected using a rank based
         on the values columns in `col_tags`, and the sorting of `col_key`, where `col_key` is now a datetime object.
-        All column headers will also be in lowercase, with punctuation stripped and replaced with underscores.
+        All column headers will also be in lowercase, with punctuation stripped and replaced with underscores. All
+        `cols_free_text` will have PII removed, and will be in lowercase. An additional column `out_col_lemma`
+        containing the compiled lemmatised `cols_free_text` text with stop words and certain symbols removed.
 
     """
 
@@ -412,4 +420,7 @@ def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_
     df_process = convert_object_to_datetime(df_process, col_key)
 
     # Process the data to remove duplicate data outside of `col_key` and `col_tags`
-    return extract_unique_tags(df_process, col_key, col_tags, set_tag_ranks, out_col_rank_label)
+    df_process = extract_unique_tags(df_process, col_key, col_tags, set_tag_ranks, col_rank_label)
+
+    # Clean `cols_free_text`, and return the cleaned lemmatised text
+    return clean_text(df_process, cols_free_text, out_col_lemma)

@@ -209,33 +209,55 @@ args_function_returns_correctly_tagging_preprocessing = [
                                   "2020-01-01 03:00:00 GMT", "2020-01-01 04:00:00 ", "2020-01-01 05:00:00  ",
                                   "2020-01-01 06:00:00  CET", "2020-01-01 07:00:00 Time", "2020-01-01 08:00:00 time",
                                   "2020-01-01 09:00:00"],
+                    "col_1": ["More text with PII [PASSPORT]", "Some text with PII - [DATE_OF_BIRTH]", "hello",
+                              "hello", "FOO", "bar", "hello world", "foobar", "More text with PII [PASSPORT]",
+                              "hello world"],
+                    "col_2": ["Some other text", "hello", "WORLD", "WORLD", "[PHONE_NUMBER] phone number", "test",
+                              "foo", "bar", "Some other text", "foo"],
                     "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
                     "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}),
-      "text_date", None, None, "rank"],
+      ["col_1", "col_2"], "text_date", None, None, "lemma"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
                                  datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
                                  datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
                                  datetime(2020, 1, 1, 6, 0, 0), datetime(2020, 1, 1, 7, 0, 0),
                                  datetime(2020, 1, 1, 8, 0, 0), datetime(2020, 1, 1, 9, 0, 0)],
+                   "col_1": ["more text with pii ", "some text with pii - ", "hello", "hello", "foo", "bar",
+                             "hello world", "foobar", "more text with pii ", "hello world"],
+                   "col_2": ["some other text", "hello", "world", "world", " phone number", "test",
+                             "foo", "bar", "some other text", "foo"],
                    "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
-                   "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]})),
+                   "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                   "lemma": ["text pii text", "text pii - hello", "hello world", "hello world", "foo phone number",
+                             "bar test", "hello world foo", "foobar bar", "text pii text", "hello world foo"]})),
     ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
                                   "2020-01-01 03:00:00 GMT", "2020-01-01 04:00:00 ", "2020-01-01 05:00:00  ",
                                   "2020-01-01 06:00:00  CET", "2020-01-01 07:00:00 Time", "2020-01-01 08:00:00 time",
                                   "2020-01-01 09:00:00"],
+                    "col_1": ["More text with PII [PASSPORT]", "Some text with PII - [DATE_OF_BIRTH]", "hello",
+                              "hello", "FOO", "bar", "hello world", "foobar", "More text with PII [PASSPORT]",
+                              "hello world"],
+                    "col_2": ["Some other text", "hello", "WORLD", "WORLD", "[PHONE_NUMBER] phone number", "test",
+                              "foo", "bar", "Some other text", "foo"],
                     "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
                     "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
-      "text_date", None, None, "rank"],
+      ["col_1", "col_2"], "text_date", None, None, "lemma"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
                                  datetime(2020, 1, 1, 3, 0, 0), datetime(2020, 1, 1, 4, 0, 0),
                                  datetime(2020, 1, 1, 5, 0, 0), datetime(2020, 1, 1, 6, 0, 0),
                                  datetime(2020, 1, 1, 7, 0, 0)],
+                   "col_1": ["more text with pii ", "some text with pii - ", "hello", "foo", "bar", "hello world",
+                             "foobar"],
+                   "col_2": ["some other text", "hello", "world", " phone number", "test", "foo", "bar"],
                    "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
                    "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
-                   "data": [0, 1, 2, 3, 4, 6, 5]}, index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
+                   "data": [0, 1, 2, 3, 4, 6, 5],
+                   "lemma": ["text pii text", "text pii - hello", "hello world", "foo phone number", "bar test",
+                             "hello world foo", "foobar bar"]},
+                  index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
 ]
 
 
@@ -724,25 +746,29 @@ def resource_tagging_preprocessing_integration(mocker):
         "src.make_feedback_tagging.tagging_preprocessing.convert_object_to_datetime"
     )
     patch_extract_unique_tags = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.extract_unique_tags")
+    patch_clean_text = mocker.patch("src.make_feedback_tagging.tagging_preprocessing.clean_text")
 
     return {"patch_standardise_columns": patch_standardise_columns,
             "patch_convert_object_to_datetime": patch_convert_object_to_datetime,
-            "patch_extract_unique_tags": patch_extract_unique_tags}
+            "patch_extract_unique_tags": patch_extract_unique_tags, "patch_clean_text": patch_clean_text}
 
 
-@pytest.mark.parametrize("test_input_df, test_input_col_key, test_input_col_tags", args_extract_unique_tags_integration)
-@pytest.mark.parametrize("test_input_out_col_rank_label", args_extract_unique_tags_integration_out_col_rank_label)
+@pytest.mark.parametrize("test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags",
+                         args_tagging_preprocessing_integration)
 @pytest.mark.parametrize("test_input_set_tag_ranks", args_extract_unique_tags_integration_set_tag_ranks)
-class TestTaggingPreProcessingIntegration:
+@pytest.mark.parametrize("test_input_out_col_lemma", ["lemma", "test"])
+@pytest.mark.parametrize("test_input_col_rank_label", args_extract_unique_tags_integration_out_col_rank_label)
+class TestTaggingPreprocessingIntegration:
 
     def test_standardise_columns_called_once_correctly(self, resource_tagging_preprocessing_integration, test_input_df,
-                                                       test_input_col_key, test_input_col_tags,
-                                                       test_input_set_tag_ranks, test_input_out_col_rank_label):
+                                                       test_input_cols_free_text, test_input_col_key,
+                                                       test_input_col_tags, test_input_set_tag_ranks,
+                                                       test_input_out_col_lemma, test_input_col_rank_label):
         """Test that tagging_preprocessing calls standardise_columns once correctly."""
 
         # Call the `tagging_preprocessing` function
-        _ = tagging_preprocessing(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
-                                  test_input_out_col_rank_label)
+        _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
+                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
 
         # Assert `standardise_columns` is called once
         resource_tagging_preprocessing_integration["patch_standardise_columns"].assert_called_once()
@@ -759,13 +785,15 @@ class TestTaggingPreProcessingIntegration:
         assert_frame_equal(test_output_args[0], test_input_df)
 
     def test_convert_object_to_datetime_called_once_correctly(self, resource_tagging_preprocessing_integration,
-                                                              test_input_df, test_input_col_key, test_input_col_tags,
-                                                              test_input_set_tag_ranks, test_input_out_col_rank_label):
+                                                              test_input_df, test_input_cols_free_text,
+                                                              test_input_col_key, test_input_col_tags,
+                                                              test_input_set_tag_ranks, test_input_out_col_lemma,
+                                                              test_input_col_rank_label):
         """Test that tagging_preprocessing calls convert_object_to_datetime once correctly."""
 
         # Call the `tagging_preprocessing` function
-        _ = tagging_preprocessing(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
-                                  test_input_out_col_rank_label)
+        _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
+                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
 
         # Assert `convert_object_to_datetime` is called once with the correct arguments
         resource_tagging_preprocessing_integration["patch_convert_object_to_datetime"].assert_called_once_with(
@@ -773,16 +801,33 @@ class TestTaggingPreProcessingIntegration:
         )
 
     def test_extract_unique_tags_called_once_correctly(self, resource_tagging_preprocessing_integration,
-                                                       test_input_df, test_input_col_key, test_input_col_tags,
-                                                       test_input_set_tag_ranks, test_input_out_col_rank_label):
+                                                       test_input_df, test_input_cols_free_text, test_input_col_key,
+                                                       test_input_col_tags, test_input_set_tag_ranks,
+                                                       test_input_out_col_lemma, test_input_col_rank_label):
         """Test that tagging_preprocessing calls extract_unique_tags once correctly."""
 
         # Call the `tagging_preprocessing` function
-        _ = tagging_preprocessing(test_input_df, test_input_col_key, test_input_col_tags, test_input_set_tag_ranks,
-                                  test_input_out_col_rank_label)
+        _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
+                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
 
         # Assert `extract_unique_tags` is called once with the correct arguments
         resource_tagging_preprocessing_integration["patch_extract_unique_tags"].assert_called_once_with(
             resource_tagging_preprocessing_integration["patch_convert_object_to_datetime"].return_value,
-            test_input_col_key, test_input_col_tags, test_input_set_tag_ranks, test_input_out_col_rank_label
+            test_input_col_key, test_input_col_tags, test_input_set_tag_ranks, test_input_col_rank_label
+        )
+
+    def test_clean_text_called_once_correctly(self, resource_tagging_preprocessing_integration,
+                                              test_input_df, test_input_cols_free_text, test_input_col_key,
+                                              test_input_col_tags, test_input_set_tag_ranks,
+                                              test_input_out_col_lemma, test_input_col_rank_label):
+        """Test that tagging_preprocessing calls clean_text once correctly."""
+
+        # Call the `tagging_preprocessing` function
+        _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
+                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
+
+        # Assert that `clean_text` is called once with the correct arguments
+        resource_tagging_preprocessing_integration["patch_clean_text"].assert_called_once_with(
+            resource_tagging_preprocessing_integration["patch_extract_unique_tags"].return_value,
+            test_input_cols_free_text, test_input_out_col_lemma
         )
