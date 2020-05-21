@@ -294,6 +294,19 @@ def remove_pii(s: pandas.Series) -> pandas.Series:
     """
     return s.replace(np.nan, "", regex=True).map(PreProcess.replace_pii_regex).str.lower()
 
+
+def compile_free_text(df: pandas.DataFrame, cols_free_text: List[str], sep: str = "\n\n") -> pandas.Series:
+    """Compile strings in different columns of a pandas DataFrame together.
+
+    :param df: A pandas DataFrame
+    :param cols_free_text: A list of columns in `df` that contain free text.
+    :param sep: Default: "\n\n". A delimiter used to separate the aggregated free text.
+    :return: A pandas Series which is a compilation of all `cols_free_text` text, delimited by `sep`.
+
+    """
+    return df[cols_free_text].agg(sep.join, axis=1)
+
+
 def tagging_preprocessing(df: pandas.DataFrame, col_key: str = "text_date", col_tags: Optional[List[str]] = None,
                           set_tag_ranks: Optional[Dict[Union[float, str], int]] = None,
                           out_col_rank_label: str = "rank") -> pandas.DataFrame:

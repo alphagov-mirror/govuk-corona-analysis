@@ -26,6 +26,7 @@ the `src/make_feedback_tagging` folder.
 .. autosummary::
     :toctree: api/
 
+    compile_free_text
     concat_identical_columns
     convert_object_to_datetime
     extract_unique_tags

@@ -1,4 +1,5 @@
 from src.make_feedback_tagging.tagging_preprocessing import (
+    compile_free_text,
     concat_identical_columns,
     convert_object_to_datetime,
     extract_unique_tags,
@@ -34,6 +35,7 @@ __all__ = [
     "ChunkParser",
     "PreProcess",
     "PII_REGEX",
+    "compile_free_text",
     "concat_identical_columns",
     "convert_object_to_datetime",
     "create_dataset",
