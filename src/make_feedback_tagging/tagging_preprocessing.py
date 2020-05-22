@@ -327,7 +327,8 @@ def extract_lemma(s: pandas.Series) -> pandas.Series:
     return s.progress_map(lambda t: " ".join([p[2] for tags in PreProcess.part_of_speech_tag(t) for p in tags]))
 
 
-def clean_text(df: pandas.DataFrame, cols_free_text: List[str], out_col: str = "lemma",
+def clean_text(df: pandas.DataFrame, cols_free_text: List[str], out_col_free_text: str = "free_text",
+               out_col_clean_text: str = "clean_text", out_col_lemma: str = "lemma",
                stop_words: Optional[List[str]] = None, n_cores: Optional[int] = None) -> pandas.DataFrame:
     """Clean free text columns in a pandas DataFrame.
 
@@ -340,11 +341,16 @@ def clean_text(df: pandas.DataFrame, cols_free_text: List[str], out_col: str = "
 
     :param df: A pandas DataFrame
     :param cols_free_text: A list of columns in `df` that contain free text, which requires cleaning.
-    :param out_col: Default: "lemma", the resultant, cleaned column of text that will be outputted in `df`.
+    :param out_col_free_text: Default: "free_text". An outputted column with the compiled text form `cols_free_text`
+        separated by `\n\n` with PII removed, and all in lowercase.
+    :param out_col_clean_text: Default: "clean_text". Like `out_col_free_text`, but with all stopwords removed,
+        and any of (, ), [, ], +, and *.
+    :param out_col_lemma: Default: "lemma", the resultant, cleaned column of text that will be outputted in `df`.
     :param stop_words: Default: None. A list of stop words. If None, will use nltk.corpus.stopwords.
     :param n_cores: Default: None. Number of processors to parallelise operations over. If None, will use the maximum
         number of available processors.
-    :return: A copy of `df` with an additional column `out_col` containing the cleaned text.
+    :return: A copy of `df` with an additional columns `out_col_free_text`, `out_col_clean_text`, and `out_col_lemma`
+        containing the compiled free text, the cleaned free text, and their lemmas, respectively.
 
     """
 
@@ -367,13 +373,15 @@ def clean_text(df: pandas.DataFrame, cols_free_text: List[str], out_col: str = "
     s_lemma = parallelise_pandas(s_rm_stop_words, extract_lemma, n_cores)
 
     # Return `df_out` with `s_lemma`
-    return df_out.assign(**{out_col: s_lemma})
+    return df_out.assign(**{out_col_free_text: s_free_text, out_col_clean_text: s_rm_stop_words,
+                            out_col_lemma: s_lemma})
 
 
 def tagging_preprocessing(df: pandas.DataFrame, cols_free_text: List[str], col_key: str = "text_date",
                           col_tags: Optional[List[str]] = None,
-                          set_tag_ranks: Optional[Dict[Union[float, str], int]] = None, out_col_lemma: str = "lemma",
-                          col_rank_label: str = "rank") -> pandas.DataFrame:
+                          set_tag_ranks: Optional[Dict[Union[float, str], int]] = None,
+                          out_col_free_text: str = "free_text", out_col_clean_text: str = "clean_text",
+                          out_col_lemma: str = "lemma", col_rank_label: str = "rank") -> pandas.DataFrame:
     """Preprocess the manually tagged data.
 
     The function operates as follows:
@@ -384,8 +392,9 @@ def tagging_preprocessing(df: pandas.DataFrame, cols_free_text: List[str], col_k
     3. Unique values from `df` across the columns not in `col_key` or `col_tags`, selecting a specific row for
        duplicate data - see the `src.extract_unique_tags` function for more information; and
     4. Removal of all personally identifiable information (PII) in the `cols_free_text` columns, all text in these
-       columns to lowercase, and a new column `out_col_lemma` with the lemmatised text compiled together with stop
-       words removed.
+       columns to lowercase, all text compiled into a single string as a new column `out_col_free_text`. Stopwords
+       and symbols are also removed from `out_col_free_text`, and returned in `out_col_clean_text`. Lemmas from
+       `out_col_clean_text` are returned in `out_col_lemma`.
 
     :param df: A pandas DataFrame potentially containing  duplicate data.
     :param cols_free_text: A list of columns in `df` that contain free text, which requires cleaning.
@@ -401,6 +410,10 @@ def tagging_preprocessing(df: pandas.DataFrame, cols_free_text: List[str], col_k
         `col_key`. The values should all be less than 0, and in ascending order of priority. If None, will use a
         predefined list of columns - see the `ORDER_TAGS` variable from
         `src.make_feedback_tagging.tagging_preprocessing` for further information.
+    :param out_col_free_text: Default: "free_text". An outputted column with the compiled text form `cols_free_text`
+        separated by `\n\n` with PII removed, and all in lowercase.
+    :param out_col_clean_text: Default: "clean_text". Like `out_col_free_text`, but with all stopwords removed,
+        and any of (, ), [, ], +, and *.
     :param out_col_lemma: Default: "lemma". An extra column outputted in `df` that contains the compiled, lemmatised
         free text.
     :param col_rank_label: Default: "rank". A column name used to store the rankings - this is not returned, and is an
@@ -408,8 +421,9 @@ def tagging_preprocessing(df: pandas.DataFrame, cols_free_text: List[str], col_k
     :return: A pandas DataFrame of unique values, where the duplicated values in `df` are selected using a rank based
         on the values columns in `col_tags`, and the sorting of `col_key`, where `col_key` is now a datetime object.
         All column headers will also be in lowercase, with punctuation stripped and replaced with underscores. All
-        `cols_free_text` will have PII removed, and will be in lowercase. An additional column `out_col_lemma`
-        containing the compiled lemmatised `cols_free_text` text with stop words and certain symbols removed.
+        `cols_free_text` will have PII removed, and will be in lowercase. Additional columns `out_col_free_text`,
+        `out_col_clean_text`, and `out_col_lemma` containing the compiled `cols_free_text` text,
+        the same text with stopwords and certain synbols removed, and their lemmas, respectively.
 
     """
 
@@ -422,5 +436,5 @@ def tagging_preprocessing(df: pandas.DataFrame, cols_free_text: List[str], col_k
     # Process the data to remove duplicate data outside of `col_key` and `col_tags`
     df_process = extract_unique_tags(df_process, col_key, col_tags, set_tag_ranks, col_rank_label)
 
-    # Clean `cols_free_text`, and return the cleaned lemmatised text
-    return clean_text(df_process, cols_free_text, out_col_lemma)
+    # Clean `cols_free_text`, and return the compiled free text, and its cleaned and its lemmatised versions
+    return clean_text(df_process, cols_free_text, out_col_free_text, out_col_clean_text, out_col_lemma)

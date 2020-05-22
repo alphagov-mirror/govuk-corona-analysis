@@ -192,14 +192,20 @@ args_function_returns_correctly_clean_text = [
     ([pd.DataFrame({"col1": ["Some text with [symbols] and one (or) two stopwords"], "col2": ["PII [DATE_OF_BIRTH]"]}),
       ["col1", "col2"]],
      pd.DataFrame({"col1": ["some text with [symbols] and one (or) two stopwords"], "col2": ["pii "],
+                   "free_text": ["some text with [symbols] and one (or) two stopwords\n\npii "],
+                   "clean_text": ["text symbols one two stopwords pii"],
                    "lemma": ["text symbol one two stopword pii"]})),
     ([pd.DataFrame({"col1": ["Some text with [symbols] and one (or) two stopwords"], "col2": ["PII [DATE_OF_BIRTH]"]}),
-      ["col1", "col2"], "test"],
+      ["col1", "col2"], "test_free_text", "test_clean_text", "test_lemma"],
      pd.DataFrame({"col1": ["some text with [symbols] and one (or) two stopwords"], "col2": ["pii "],
-                   "test": ["text symbol one two stopword pii"]})),
+                   "test_free_text": ["some text with [symbols] and one (or) two stopwords\n\npii "],
+                   "test_clean_text": ["text symbols one two stopwords pii"],
+                   "test_lemma": ["text symbol one two stopword pii"]})),
     ([pd.DataFrame({"col1": ["Some text with [symbols] and one (or) two stopwords"], "col2": ["PII [DATE_OF_BIRTH]"]}),
-      ["col1", "col2"], "lemma", ["stopwords"]],
+      ["col1", "col2"], "free_text", "clean_text", "lemma", ["stopwords"]],
      pd.DataFrame({"col1": ["some text with [symbols] and one (or) two stopwords"], "col2": ["pii "],
+                   "free_text": ["some text with [symbols] and one (or) two stopwords\n\npii "],
+                   "clean_text": ["some text with symbols and one or two pii"],
                    "lemma": ["some text with symbol and one or two pii"]})),
 ]
 
@@ -217,7 +223,7 @@ args_function_returns_correctly_tagging_preprocessing = [
                     "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
                     "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}),
-      ["col_1", "col_2"], "text_date", None, None, "lemma"],
+      ["col_1", "col_2"], "text_date", None, None, "free_text", "clean_text", "lemma"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
                                  datetime(2020, 1, 1, 2, 0, 0), datetime(2020, 1, 1, 3, 0, 0),
                                  datetime(2020, 1, 1, 4, 0, 0), datetime(2020, 1, 1, 5, 0, 0),
@@ -230,6 +236,13 @@ args_function_returns_correctly_tagging_preprocessing = [
                    "this_response_relates_to_": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
                    "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
                    "data": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                   "free_text": ["more text with pii \n\nsome other text", "some text with pii - \n\nhello",
+                                 "hello\n\nworld", "hello\n\nworld", "foo\n\n phone number", "bar\n\ntest",
+                                 "hello world\n\nfoo", "foobar\n\nbar", "more text with pii \n\nsome other text",
+                                 "hello world\n\nfoo"],
+                   "clean_text": ["text pii text", "text pii - hello", "hello world", "hello world",
+                                  "foo phone number", "bar test", "hello world foo", "foobar bar", "text pii text",
+                                  "hello world foo"],
                    "lemma": ["text pii text", "text pii - hello", "hello world", "hello world", "foo phone number",
                              "bar test", "hello world foo", "foobar bar", "text pii text", "hello world foo"]})),
     ([pd.DataFrame({"text_date": ["2020-01-01 00:00:00", "2020-01-01 01:00:00UTC", "2020-01-01 02:00:00 UTC",
@@ -244,7 +257,7 @@ args_function_returns_correctly_tagging_preprocessing = [
                     "this_response_relates_to_": ["a", "b", np.nan, "internal", "e", "f", "g", "h", "i", "j"],
                     "coronavirus_theme": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "none"],
                     "data": [0, 1, 2, 2, 3, 4, 6, 5, 0, 6]}),
-      ["col_1", "col_2"], "text_date", None, None, "lemma"],
+      ["col_1", "col_2"], "text_date", None, None, "free_text", "clean_text", "lemma"],
      pd.DataFrame({"text_date": [datetime(2020, 1, 1, 0, 0, 0), datetime(2020, 1, 1, 1, 0, 0),
                                  datetime(2020, 1, 1, 3, 0, 0), datetime(2020, 1, 1, 4, 0, 0),
                                  datetime(2020, 1, 1, 5, 0, 0), datetime(2020, 1, 1, 6, 0, 0),
@@ -255,6 +268,11 @@ args_function_returns_correctly_tagging_preprocessing = [
                    "this_response_relates_to_": ["a", "b", "internal", "e", "f", "g", "h"],
                    "coronavirus_theme": ["A", "B", "D", "E", "F", "G", "H"],
                    "data": [0, 1, 2, 3, 4, 6, 5],
+                   "free_text": ["more text with pii \n\nsome other text", "some text with pii - \n\nhello",
+                                 "hello\n\nworld", "foo\n\n phone number", "bar\n\ntest", "hello world\n\nfoo",
+                                 "foobar\n\nbar"],
+                   "clean_text": ["text pii text", "text pii - hello", "hello world", "foo phone number", "bar test",
+                                  "hello world foo", "foobar bar"],
                    "lemma": ["text pii text", "text pii - hello", "hello world", "foo phone number", "bar test",
                              "hello world foo", "foobar bar"]},
                   index=pd.Int64Index([0, 1, 3, 4, 5, 6, 7])))
@@ -647,7 +665,7 @@ class TestExtractUniqueTagsRaisesAssertionError:
 
 # Define test cases for the `TestCleanTextIntegration` test class
 args_clean_text_integration = [
-    (pd.DataFrame({"col_1": ["a", "b", "c"], "col_2": ["D", "E", "F"]}), ["col_1", "col_2"], "lemma", None)
+    (pd.DataFrame({"col_1": ["a", "b", "c"], "col_2": ["D", "E", "F"]}), ["col_1", "col_2"], None)
 ]
 
 
@@ -665,19 +683,18 @@ def resource_clean_text_integration(mocker):
             "patch_parallelise_pandas": patch_parallelise_pandas, "patch_assign": patch_assign}
 
 
-@pytest.mark.parametrize("test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords",
-                         args_clean_text_integration)
+@pytest.mark.parametrize("test_input_df, test_input_cols_free_text, test_input_stopwords", args_clean_text_integration)
 @pytest.mark.parametrize("test_input_n_cores", [None, 1])
 class TestCleanTextIntegration:
 
     def test_remove_pii_called_correctly(self, resource_clean_text_integration, test_input_df,
-                                         test_input_cols_free_text, test_input_out_col, test_input_stopwords,
+                                         test_input_cols_free_text, test_input_stopwords,
                                          test_input_n_cores):
         """Test that clean_text calls remove_pii correctly."""
 
         # Call the `clean_text` function
-        _ = clean_text(test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords,
-                       test_input_n_cores)
+        _ = clean_text(test_input_df, test_input_cols_free_text, "free_text", "clean_text", "lemma",
+                       test_input_stopwords, test_input_n_cores)
 
         # Assert that `remove_pii` is called the expected number of times
         assert resource_clean_text_integration["patch_remove_pii"].call_count == len(test_input_cols_free_text)
@@ -697,13 +714,13 @@ class TestCleanTextIntegration:
             assert_series_equal(test_output_args[0], test_input_df[col])
 
     def test_compile_free_text_called_once_correctly(self, resource_clean_text_integration, test_input_df,
-                                                     test_input_cols_free_text, test_input_out_col,
-                                                     test_input_stopwords, test_input_n_cores):
+                                                     test_input_cols_free_text, test_input_stopwords,
+                                                     test_input_n_cores):
         """Test that clean_text calls compile_free_text correctly."""
 
         # Call the `clean_text` function
-        _ = clean_text(test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords,
-                       test_input_n_cores)
+        _ = clean_text(test_input_df, test_input_cols_free_text, "free_text", "clean_text", "lemma",
+                       test_input_stopwords, test_input_n_cores)
 
         # Assert `compile_free_text` is called once only with the correct arguments
         resource_clean_text_integration["patch_compile_free_text"].assert_called_once_with(
@@ -711,13 +728,13 @@ class TestCleanTextIntegration:
         )
 
     def test_parallelise_pandas_called_once_correctly(self, resource_clean_text_integration, test_input_df,
-                                                      test_input_cols_free_text, test_input_out_col,
-                                                      test_input_stopwords, test_input_n_cores):
+                                                      test_input_cols_free_text, test_input_stopwords,
+                                                      test_input_n_cores):
         """Test that clean_text calls parallelise_pandas correctly."""
 
         # Call the `clean_text` function
-        _ = clean_text(test_input_df, test_input_cols_free_text, test_input_out_col, test_input_stopwords,
-                       test_input_n_cores)
+        _ = clean_text(test_input_df, test_input_cols_free_text, "free_text", "clean_text", "lemma",
+                       test_input_stopwords, test_input_n_cores)
 
         # Assert that `parallelise_pandas` is called once correctly
         resource_clean_text_integration["patch_parallelise_pandas"].assert_called_once_with(
@@ -729,10 +746,11 @@ class TestCleanTextIntegration:
 # Define the test cases for the majority of arguments in the `TestTaggingPreProcessingIntegration` test class
 args_tagging_preprocessing_integration = [
     (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 1, 1], "col_b": [3, 4, 4], "col_tag1": [6, 7, 8],
-                   "col_tag2": [9, 10, 11], "free_text": ["a", "b", "c"]}), ["free_text"], "col_key", None),
+                   "col_tag2": [9, 10, 11], "free_text": ["a", "b", "c"]}), ["free_text"], "col_key", None,
+     "free_text", "clean_text", "lemma"),
     (pd.DataFrame({"col_key": ["a", "b", "c"], "col_a": [0, 0, 1], "col_b": [3, 3, 4], "col_tag1": [6, 7, 8],
                    "col_tag2": [9, 10, 11], "free_text": ["a", "b", "c"]}), "free_text", "col_key",
-     ["col_tag1", "col_tag2"])
+     ["col_tag1", "col_tag2"], "test_free_text", "test_clean_text", "test_lemma")
 ]
 
 
@@ -753,16 +771,17 @@ def resource_tagging_preprocessing_integration(mocker):
             "patch_extract_unique_tags": patch_extract_unique_tags, "patch_clean_text": patch_clean_text}
 
 
-@pytest.mark.parametrize("test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags",
+@pytest.mark.parametrize("test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags, "
+                         "test_input_out_col_free_text, test_input_out_col_clean_text, test_input_out_col_lemma",
                          args_tagging_preprocessing_integration)
 @pytest.mark.parametrize("test_input_set_tag_ranks", args_extract_unique_tags_integration_set_tag_ranks)
-@pytest.mark.parametrize("test_input_out_col_lemma", ["lemma", "test"])
 @pytest.mark.parametrize("test_input_col_rank_label", args_extract_unique_tags_integration_out_col_rank_label)
 class TestTaggingPreprocessingIntegration:
 
     def test_standardise_columns_called_once_correctly(self, resource_tagging_preprocessing_integration, test_input_df,
                                                        test_input_cols_free_text, test_input_col_key,
                                                        test_input_col_tags, test_input_set_tag_ranks,
+                                                       test_input_out_col_free_text, test_input_out_col_clean_text,
                                                        test_input_out_col_lemma, test_input_col_rank_label):
         """Test that tagging_preprocessing calls standardise_columns once correctly."""
 
@@ -787,13 +806,15 @@ class TestTaggingPreprocessingIntegration:
     def test_convert_object_to_datetime_called_once_correctly(self, resource_tagging_preprocessing_integration,
                                                               test_input_df, test_input_cols_free_text,
                                                               test_input_col_key, test_input_col_tags,
-                                                              test_input_set_tag_ranks, test_input_out_col_lemma,
+                                                              test_input_set_tag_ranks, test_input_out_col_free_text,
+                                                              test_input_out_col_clean_text, test_input_out_col_lemma,
                                                               test_input_col_rank_label):
         """Test that tagging_preprocessing calls convert_object_to_datetime once correctly."""
 
         # Call the `tagging_preprocessing` function
         _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
-                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
+                                  test_input_set_tag_ranks, test_input_out_col_free_text,
+                                  test_input_out_col_clean_text, test_input_out_col_lemma, test_input_col_rank_label)
 
         # Assert `convert_object_to_datetime` is called once with the correct arguments
         resource_tagging_preprocessing_integration["patch_convert_object_to_datetime"].assert_called_once_with(
@@ -803,12 +824,14 @@ class TestTaggingPreprocessingIntegration:
     def test_extract_unique_tags_called_once_correctly(self, resource_tagging_preprocessing_integration,
                                                        test_input_df, test_input_cols_free_text, test_input_col_key,
                                                        test_input_col_tags, test_input_set_tag_ranks,
+                                                       test_input_out_col_free_text, test_input_out_col_clean_text,
                                                        test_input_out_col_lemma, test_input_col_rank_label):
         """Test that tagging_preprocessing calls extract_unique_tags once correctly."""
 
         # Call the `tagging_preprocessing` function
         _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
-                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
+                                  test_input_set_tag_ranks, test_input_out_col_free_text,
+                                  test_input_out_col_clean_text, test_input_out_col_lemma, test_input_col_rank_label)
 
         # Assert `extract_unique_tags` is called once with the correct arguments
         resource_tagging_preprocessing_integration["patch_extract_unique_tags"].assert_called_once_with(
@@ -819,15 +842,18 @@ class TestTaggingPreprocessingIntegration:
     def test_clean_text_called_once_correctly(self, resource_tagging_preprocessing_integration,
                                               test_input_df, test_input_cols_free_text, test_input_col_key,
                                               test_input_col_tags, test_input_set_tag_ranks,
+                                              test_input_out_col_free_text, test_input_out_col_clean_text,
                                               test_input_out_col_lemma, test_input_col_rank_label):
         """Test that tagging_preprocessing calls clean_text once correctly."""
 
         # Call the `tagging_preprocessing` function
         _ = tagging_preprocessing(test_input_df, test_input_cols_free_text, test_input_col_key, test_input_col_tags,
-                                  test_input_set_tag_ranks, test_input_out_col_lemma, test_input_col_rank_label)
+                                  test_input_set_tag_ranks, test_input_out_col_free_text,
+                                  test_input_out_col_clean_text, test_input_out_col_lemma, test_input_col_rank_label)
 
         # Assert that `clean_text` is called once with the correct arguments
         resource_tagging_preprocessing_integration["patch_clean_text"].assert_called_once_with(
             resource_tagging_preprocessing_integration["patch_extract_unique_tags"].return_value,
-            test_input_cols_free_text, test_input_out_col_lemma
+            test_input_cols_free_text, test_input_out_col_free_text, test_input_out_col_clean_text,
+            test_input_out_col_lemma
         )
