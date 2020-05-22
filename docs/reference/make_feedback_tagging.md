@@ -42,3 +42,16 @@ the `src/make_feedback_tagging` folder.
     standardise_columns
 
 ```
+
+## Modelling
+
+### Performance metrics
+
+```eval_rst
+.. autosummary::
+    :toctree: api/
+
+    calculate_metrics
+    confusion_matrix_dataframe
+
+```

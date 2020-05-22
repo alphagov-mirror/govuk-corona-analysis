@@ -1,3 +1,5 @@
+from src.make_feedback_tagging.calculate_performance_metrics import calculate_metrics
+from src.make_feedback_tagging.generate_confusion_matrix_dataframe import confusion_matrix_dataframe
 from src.make_feedback_tagging.tagging_preprocessing import (
     clean_text,
     compile_free_text,
@@ -39,9 +41,11 @@ __all__ = [
     "ChunkParser",
     "PreProcess",
     "PII_REGEX",
+    "calculate_metrics",
     "clean_text",
     "compile_free_text",
     "concat_identical_columns",
+    "confusion_matrix_dataframe",
     "convert_object_to_datetime",
     "coronavirus_misspellings_and_typos_regex",
     "create_dataset",
